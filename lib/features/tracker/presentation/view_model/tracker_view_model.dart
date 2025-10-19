@@ -5,14 +5,14 @@ import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
 
 /// ViewModel to manage tracking state and data
 class TrackingViewModel extends ChangeNotifier {
-  // repository instance to handle tracking logic (audio service + kws service)
+  // repository instance to handle tracking logic (audio service + kws service + local storage)
   final TrackerRepository _repository;
 
   // Subscription to have a handle to stop listening to tracked keywords later
   StreamSubscription<TrackedKeyword>? _trackWordSub;
 
   // State variables
-  TrackedKeyword _lastKeyword = TrackedKeyword('', DateTime.now());
+  TrackedKeyword _lastKeyword = TrackedKeyword('', DateTime(2000));
   int _totalCount = 0;
   bool _isRunning = false;
 
@@ -23,6 +23,20 @@ class TrackingViewModel extends ChangeNotifier {
 
   TrackingViewModel(this._repository);
 
+  // Initialize view model
+  Future<void> init() async {
+    // Initialize the repository and its services
+    await _repository.init();
+
+    // Load today's history to set initial state
+    final todayHistory = _repository.getHistoryForDay(DateTime.now());
+    _lastKeyword = todayHistory.isNotEmpty
+        ? todayHistory.last
+        : TrackedKeyword('', DateTime(2000));
+    _totalCount = todayHistory.length;
+  }
+
+  // Start tracking process
   Future<void> start() async {
     if (_isRunning) return;
 
@@ -45,7 +59,7 @@ class TrackingViewModel extends ChangeNotifier {
   Future<void> stop() async {
     if (!_isRunning) return;
 
-    await _repository.dispose();
+    await _repository.stop();
     await _trackWordSub?.cancel();
     _isRunning = false;
     notifyListeners();

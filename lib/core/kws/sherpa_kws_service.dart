@@ -21,7 +21,7 @@ class SherpaKwsService {
   Stream<String> get stream => _controller.stream;
 
   // Initialize the Sherpa KWS model and load keywords
-  Future<void> initialize(String modelName) async {
+  Future<void> init(String modelName) async {
     if (_isInitialized) return;
 
     // Sherpa ONNX stream and model initialization
