@@ -4,6 +4,7 @@ import 'package:catch_this_ai/features/tracker/presentation/view_model/tracker_v
 import 'package:catch_this_ai/features/tracker/data/tracker_repository.dart';
 import 'package:catch_this_ai/core/audio/audio_stream_service.dart';
 import 'package:catch_this_ai/core/kws/sherpa_kws_service.dart';
+import 'package:catch_this_ai/features/tracker/data/local/tracker_local_storage.dart';
 import 'package:catch_this_ai/app/home_page.dart';
 import '../core/theme/app_theme.dart';
 
@@ -16,15 +17,28 @@ class MyApp extends StatelessWidget {
     // Instantiate audio, KWS services, and tracker repository
     final audioService = AudioStreamService();
     final kwsService = SherpaKwsService();
-    final trackerRepository = TrackerRepository(audioService, kwsService);
+    final localStorage = TrackerLocalStorage();
+
+    final trackerRepository = TrackerRepository(
+      audioService,
+      kwsService,
+      localStorage,
+    );
 
     return ChangeNotifierProvider(
-      create: (_) => TrackingViewModel(trackerRepository)..start(),
-      child: MaterialApp(
-        title: 'Catch This AI',
-        theme: AppTheme.theme,
-        home: const MyHomePage(),
-      ),
+      create: (_) => TrackingViewModel(trackerRepository),
+      builder: (context, child) {
+        final viewModel = context.read<TrackingViewModel>();
+        Future.microtask(() async {
+          await viewModel.init();
+          await viewModel.start();
+        });
+        return MaterialApp(
+          title: 'Catch This AI',
+          theme: AppTheme.theme,
+          home: const MyHomePage(),
+        );
+      },
     );
   }
 }
