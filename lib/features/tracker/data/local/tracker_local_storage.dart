@@ -1,4 +1,3 @@
-import 'package:hive/hive.dart';
 import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
 import 'package:hive_flutter/adapters.dart';
 
