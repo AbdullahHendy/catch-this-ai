@@ -26,7 +26,7 @@ class TrackerRepository {
   Future<void> start() async {
     const modelName = 'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01';
     // Initialize KWS service and start audio streaming
-    await _kwsService.initialize(modelName);
+    await _kwsService.init(modelName);
     await _audioService.start();
 
     // Listen to audio stream and pass audio data to KWS service for keyword detection
