@@ -12,8 +12,8 @@ class TrackerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<TrackingViewModel>();
-    final trackedKeyword = appState.lastKeyword;
-    final count = appState.totalCount;
+    final trackedKeyword = appState.lastDayKeyword;
+    final count = appState.totalDayCount;
 
     return Scaffold(
       appBar: AppBar(

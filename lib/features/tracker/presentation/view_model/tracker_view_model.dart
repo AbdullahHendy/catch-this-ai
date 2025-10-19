@@ -11,14 +11,18 @@ class TrackingViewModel extends ChangeNotifier {
   // Subscription to have a handle to stop listening to tracked keywords later
   StreamSubscription<TrackedKeyword>? _trackWordSub;
 
+  // Day check timer and tracking variables
+  Timer? _dayCheckTimer;
+  DateTime _currentDay = DateTime.now();
+
   // State variables
-  TrackedKeyword _lastKeyword = TrackedKeyword('', DateTime(2000));
-  int _totalCount = 0;
+  TrackedKeyword _lastDayKeyword = TrackedKeyword('', DateTime(2000));
+  int _totalDayCount = 0;
   bool _isRunning = false;
 
   // Getters for state variables for easy access
-  TrackedKeyword get lastKeyword => _lastKeyword;
-  int get totalCount => _totalCount;
+  TrackedKeyword get lastDayKeyword => _lastDayKeyword;
+  int get totalDayCount => _totalDayCount;
   bool get isRunning => _isRunning;
 
   TrackingViewModel(this._repository);
@@ -29,11 +33,7 @@ class TrackingViewModel extends ChangeNotifier {
     await _repository.init();
 
     // Load today's history to set initial state
-    final todayHistory = _repository.getHistoryForDay(DateTime.now());
-    _lastKeyword = todayHistory.isNotEmpty
-        ? todayHistory.last
-        : TrackedKeyword('', DateTime(2000));
-    _totalCount = todayHistory.length;
+    _loadTodayHistory();
   }
 
   // Start tracking process
@@ -45,10 +45,25 @@ class TrackingViewModel extends ChangeNotifier {
 
     // Listen to tracked keywords (TrackedKeyword) from the repository stream
     _trackWordSub = _repository.stream.listen((trackedKeyword) {
-      _lastKeyword = trackedKeyword;
-      _totalCount++;
+      final now = DateTime.now();
+      // Guard for the case when first keyword of the day is detected before the timer resets the day
+      if (!_isSameDay(now, _currentDay)) {
+        _loadTodayHistory();
+      }
+
+      _lastDayKeyword = trackedKeyword;
+      _totalDayCount++;
       // Notify listeners (UI) about state changes
       notifyListeners();
+    });
+
+    // Timer to check for day changes every minute
+    _dayCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      final now = DateTime.now();
+      if (!_isSameDay(now, _currentDay)) {
+        // Day has changed, reload today's history (updates _currentDay as well)
+        _loadTodayHistory();
+      }
     });
 
     _isRunning = true;
@@ -62,12 +77,33 @@ class TrackingViewModel extends ChangeNotifier {
     await _repository.stop();
     await _trackWordSub?.cancel();
     _isRunning = false;
+    _dayCheckTimer?.cancel();
     notifyListeners();
   }
 
   @override
   void dispose() {
     _trackWordSub?.cancel();
+    _dayCheckTimer?.cancel();
     super.dispose();
+  }
+
+  // Helper to load today's history
+  void _loadTodayHistory() {
+    final today = DateTime.now();
+    final todayHistory = _repository.getHistoryForDay(today);
+    _lastDayKeyword = todayHistory.isNotEmpty
+        ? todayHistory.last
+        : TrackedKeyword('', DateTime(2000));
+    _totalDayCount = todayHistory.length;
+    _currentDay = today;
+    notifyListeners();
+  }
+
+  // Helper to check if a two dates are on the same day
+  bool _isSameDay(DateTime now, DateTime currentDay) {
+    return now.year == currentDay.year &&
+        now.month == currentDay.month &&
+        now.day == currentDay.day;
   }
 }
