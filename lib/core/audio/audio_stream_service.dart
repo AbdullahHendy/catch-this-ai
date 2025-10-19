@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:catch_this_ai/core/utils/audio_utils.dart';
 import 'package:record/record.dart';
 
-// Service to handle audio streaming from the microphone and emit Float32List audio data
+/// Service to handle audio streaming from the microphone and emit Float32List audio data
 class AudioStreamService {
   // Instance of the audio recorder
   late final AudioRecorder _audioRecorder = AudioRecorder();

@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:catch_this_ai/core/kws/sherpa_model_loader.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 
-// Service to manage Sherpa KWS model loading and keyword retrieval
+/// Service to manage Sherpa KWS model loading and keyword retrieval
 class SherpaKwsService {
   // Sherpa ONNX keyword spotter and stream instances
   sherpa_onnx.KeywordSpotter? _spotter;

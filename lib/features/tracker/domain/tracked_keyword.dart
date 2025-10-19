@@ -1,5 +1,4 @@
-// Domain model representing a tracked keyword with its timestamp
-
+/// Domain model representing a tracked keyword with its timestamp
 class TrackedKeyword {
   final String keyword;
   final DateTime timestamp;

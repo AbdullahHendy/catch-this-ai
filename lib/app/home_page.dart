@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:catch_this_ai/features/tracker/presentation/pages/tracker_page.dart';
 
+/// Home page with navigation to different sections
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -30,6 +31,11 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
 
+    const Icon trackingIcon = Icon(Icons.spatial_tracking);
+    const String trackingLabel = 'Catch This AI';
+    const Icon statsIcon = Icon(Icons.query_stats);
+    const String statsLabel = 'Stats';
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -42,12 +48,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: BottomNavigationBar(
                     items: const [
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.spatial_tracking),
-                        label: 'Catch This AI',
+                        icon: trackingIcon,
+                        label: trackingLabel,
                       ),
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.query_stats),
-                        label: 'Stats',
+                        icon: statsIcon,
+                        label: statsLabel,
                       ),
                     ],
                     currentIndex: selectedIndex,
@@ -65,12 +71,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     extended: constraints.maxWidth >= 600,
                     destinations: const [
                       NavigationRailDestination(
-                        icon: Icon(Icons.home),
-                        label: Text('Home'),
+                        icon: trackingIcon,
+                        label: Text(trackingLabel),
                       ),
                       NavigationRailDestination(
-                        icon: Icon(Icons.favorite),
-                        label: Text('Favorites'),
+                        icon: statsIcon,
+                        label: Text(statsLabel),
                       ),
                     ],
                     selectedIndex: selectedIndex,

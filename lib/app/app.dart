@@ -7,7 +7,7 @@ import 'package:catch_this_ai/core/kws/sherpa_kws_service.dart';
 import 'package:catch_this_ai/app/home_page.dart';
 import '../core/theme/app_theme.dart';
 
-// Main application widget
+/// Main application widget
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 

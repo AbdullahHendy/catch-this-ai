@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:catch_this_ai/features/tracker/data/tracker_repository.dart';
 import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
 
-// ViewModel to manage tracking state and data
+/// ViewModel to manage tracking state and data
 class TrackingViewModel extends ChangeNotifier {
   // repository instance to handle tracking logic (audio service + kws service)
   final TrackerRepository _repository;

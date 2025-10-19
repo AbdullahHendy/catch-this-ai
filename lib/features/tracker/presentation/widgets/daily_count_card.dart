@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
 
+/// Card to display the daily count of tracked keywords
 // TODO: 1. This card currently shows the last tracked keyword and its timestamp, for testing purposes.
 //       2. Update it to mainly show the daily count of tracked keywords instead ()
 //       3. Need more cards for other stats like weekly, monthly, blah.
-
 class DailyCountCard extends StatelessWidget {
   const DailyCountCard({super.key, required this.trackedKeyword});
   final TrackedKeyword trackedKeyword;

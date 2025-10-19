@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:catch_this_ai/features/tracker/presentation/view_model/tracker_view_model.dart';
 import 'package:catch_this_ai/features/tracker/presentation/widgets/daily_count_card.dart';
 
-// Main page for tracking keywords
+/// Main page for tracking keywords
 // TODO: 1. Fix the DailyCountCard to show daily counts instead of last keyword, see daily_count_card.dart
 //       2. Add more cards and stuff for better UI/UX
 class TrackerPage extends StatelessWidget {
