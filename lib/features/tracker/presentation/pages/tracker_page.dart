@@ -23,6 +23,11 @@ class TrackerPage extends StatelessWidget {
         ),
         centerTitle: true,
         animateColor: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
       ),
       body: Center(
         child: Column(
