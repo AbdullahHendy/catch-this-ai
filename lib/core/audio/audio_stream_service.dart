@@ -51,9 +51,11 @@ class AudioStreamService {
     // Start recording and listen to the audio stream
     final recordStream = await _audioRecorder.startStream(recordConfig);
 
-    recordStream.listen((data) {
-      final floatData = convertBytesToFloat32(Uint8List.fromList(data));
-      _controller.add(floatData);
+    recordStream.listen((rawData) {
+      final float32ListData = convertBytesToFloat32List(
+        Uint8List.fromList(rawData),
+      );
+      _controller.add(float32ListData);
     }, onError: (e, st) => _controller.addError(e, st));
 
     // Update recording state
