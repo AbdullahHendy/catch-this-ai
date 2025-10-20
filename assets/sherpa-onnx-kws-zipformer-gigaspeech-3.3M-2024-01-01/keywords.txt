@@ -1,15 +1,6 @@
-▁HE LL O ▁WORLD
-▁HI ▁GO O G LE
-▁HE Y ▁S I RI
-▁A LE X A
-▁LOVE ▁AND ▁P E A CE
-▁PLAY ▁MU S IC
-▁GO ▁HOME
-▁HA PP Y ▁NEW ▁YEAR
-▁ME R RY ▁ CH R IST MA S
-▁A I ▁
-▁A I
-A I
-▁A I <sos/eos>
-<sos/eos> ▁A I
-S ▁A I
+▁HE LL O ▁WORLD :1
+▁HI ▁GO O G LE :1
+▁HE Y ▁S I RI :1
+▁A LE X A :1
+▁PLAY ▁MU S IC :1
+▁A I :2
