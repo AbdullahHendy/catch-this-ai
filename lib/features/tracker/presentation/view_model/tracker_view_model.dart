@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:catch_this_ai/features/tracker/data/tracker_repository.dart';
 import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
+import 'package:flutter/material.dart';
 
 /// ViewModel to manage tracking state and data
 class TrackingViewModel extends ChangeNotifier {
@@ -16,24 +16,33 @@ class TrackingViewModel extends ChangeNotifier {
   DateTime _currentDay = DateTime.now();
 
   // State variables
-  TrackedKeyword _lastDayKeyword = TrackedKeyword('', DateTime(2000));
+  final List<TrackedKeyword> _dayKeywordHistory = [];
   int _totalDayCount = 0;
   bool _isRunning = false;
+  bool _isInitialized = false;
+
+  // GlobalKey for AnimatedList in history view
+  GlobalKey? historyListKey;
 
   // Getters for state variables for easy access
-  TrackedKeyword get lastDayKeyword => _lastDayKeyword;
+  List<TrackedKeyword> get dayKeywordHistory => _dayKeywordHistory;
   int get totalDayCount => _totalDayCount;
   bool get isRunning => _isRunning;
+  bool get isInitialized => _isInitialized;
 
   TrackingViewModel(this._repository);
 
   // Initialize view model
   Future<void> init() async {
+    if (_isInitialized) return;
     // Initialize the repository and its services
     await _repository.init();
 
     // Load today's history to set initial state
     _loadTodayHistory();
+
+    _isInitialized = true;
+    notifyListeners();
   }
 
   // Start tracking process
@@ -51,7 +60,9 @@ class TrackingViewModel extends ChangeNotifier {
         _loadTodayHistory();
       }
 
-      _lastDayKeyword = trackedKeyword;
+      _dayKeywordHistory.insert(0, trackedKeyword);
+      final animatedList = historyListKey?.currentState as AnimatedListState?;
+      animatedList?.insertItem(0);
       _totalDayCount++;
       // Notify listeners (UI) about state changes
       notifyListeners();
@@ -85,6 +96,7 @@ class TrackingViewModel extends ChangeNotifier {
   void dispose() {
     _trackWordSub?.cancel();
     _dayCheckTimer?.cancel();
+    _isInitialized = false;
     super.dispose();
   }
 
@@ -92,12 +104,15 @@ class TrackingViewModel extends ChangeNotifier {
   void _loadTodayHistory() {
     final today = DateTime.now();
     final todayHistory = _repository.getHistoryForDay(today);
-    _lastDayKeyword = todayHistory.isNotEmpty
-        ? todayHistory.last
-        : TrackedKeyword('', DateTime(2000));
-    _totalDayCount = todayHistory.length;
+
+    final animatedList = historyListKey?.currentState as AnimatedListState?;
+    for (final keyword in todayHistory) {
+      _dayKeywordHistory.insert(0, keyword);
+      animatedList?.insertItem(0, duration: Duration(milliseconds: 1000));
+    }
+
+    _totalDayCount = _dayKeywordHistory.length;
     _currentDay = today;
-    notifyListeners();
   }
 
   // Helper to check if a two dates are on the same day

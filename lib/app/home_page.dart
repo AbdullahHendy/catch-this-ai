@@ -35,6 +35,8 @@ class _MyHomePageState extends State<MyHomePage> {
     const String trackingLabel = 'Catch This AI';
     const Icon statsIcon = Icon(Icons.query_stats);
     const String statsLabel = 'Stats';
+    const Icon settingsIcon = Icon(Icons.settings);
+    const String settingsLabel = 'Settings';
 
     return Scaffold(
       body: LayoutBuilder(
@@ -54,6 +56,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       BottomNavigationBarItem(
                         icon: statsIcon,
                         label: statsLabel,
+                      ),
+                      BottomNavigationBarItem(
+                        icon: settingsIcon,
+                        label: settingsLabel,
                       ),
                     ],
                     currentIndex: selectedIndex,
