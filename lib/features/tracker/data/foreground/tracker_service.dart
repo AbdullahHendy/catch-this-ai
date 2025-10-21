@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
 import 'package:catch_this_ai/features/tracker/data/foreground/tracker_task_handler.dart';
@@ -66,10 +68,12 @@ class TrackerService {
             'This notification appears when the keyword tracker is running in the foreground.',
         channelImportance: NotificationChannelImportance.MAX,
         priority: NotificationPriority.MAX,
+        playSound: true,
+        enableVibration: true,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
         showNotification: true,
-        playSound: false,
+        playSound: true,
       ),
       foregroundTaskOptions: ForegroundTaskOptions(
         eventAction: ForegroundTaskEventAction.nothing(),
@@ -85,10 +89,11 @@ class TrackerService {
     if (await FlutterForegroundTask.isRunningService) {
       await FlutterForegroundTask.restartService();
     } else {
+      // Notification buttons, texts are updated later in the TrackerTaskHandler
       await FlutterForegroundTask.startService(
         serviceId: 256,
         notificationTitle: 'Catching This AI',
-        notificationText: 'Tap to return to app',
+        notificationText: '',
         notificationIcon: null,
         notificationButtons: const [],
         notificationInitialRoute: '/',
@@ -127,6 +132,7 @@ class TrackerService {
 
   // Internal method to handle data received from the foreground task
   void _onReceiveTaskData(Object data) {
+    // Check if the data is a tracked keyword map
     bool isTrackedKeywordData =
         data is Map<String, dynamic> &&
         data.containsKey('keyword') &&
@@ -138,6 +144,19 @@ class TrackerService {
       for (final callback in _callbacks) {
         callback(trackedKeyword);
       }
+    }
+
+    // Check if data is EXIT_APP command (sent from TrackerTaskHandler when user presses exit button on notification)
+    bool isExitCommand = data is String && data == 'EXIT_APP';
+    if (isExitCommand) {
+      stop();
+      SystemNavigator.pop();
+    }
+
+    // Check if the data is debug information (used to send debug strings from the task since it's in a different isolate)
+    bool isDebugData = data is String && data.startsWith('DEBUG:');
+    if (isDebugData) {
+      debugPrint('Foreground Task Debug: $data');
     }
   }
 

@@ -25,6 +25,9 @@ class TrackerTaskHandler extends TaskHandler {
     await _repository.init();
     await _repository.start();
 
+    // Update the notification to reflect the tracking state
+    await _updateNotification();
+
     // Listen to tracked keywords from the repository and send them to the main isolate
     _sub = _repository.stream.listen((trackedKeyword) {
       // Send the tracked keyword to the main isolate
@@ -55,8 +58,27 @@ class TrackerTaskHandler extends TaskHandler {
 
   // onNotificationButtonPressed is called when the notification button is pressed.
   @override
-  void onNotificationButtonPressed(String id) {
-    debugPrint('onNotificationButtonPressed: $id');
+  Future<void> onNotificationButtonPressed(String id) async {
+    switch (id) {
+      case 'btn_start':
+        if (!_repository.isStarted) {
+          await _repository.start();
+          await _updateNotification();
+        }
+
+      case 'btn_stop':
+        if (_repository.isStarted) {
+          await _repository.stop();
+          await _updateNotification();
+        }
+
+      case 'btn_exit':
+        // Callback handles app exit in the main isolate, see _onReceiveTaskData in tracker_service.dart
+        FlutterForegroundTask.sendDataToMain('EXIT_APP');
+
+      default:
+        break;
+    }
   }
 
   // onNotificationPressed is called when the notification itself is pressed.
@@ -68,6 +90,26 @@ class TrackerTaskHandler extends TaskHandler {
   // onNotificationDismissed is called when the notification itself is dismissed.
   @override
   void onNotificationDismissed() {
-    debugPrint('onNotificationDismissed');
+    // If notification is dismissed, bring it back since its needed for controls like stop/start/exit
+    // Effectively makes the notification sticky/undismissable
+    _updateNotification();
+  }
+
+  // Helper method to update the service notification buttons and text based on the repository state
+  Future<void> _updateNotification() async {
+    FlutterForegroundTask.updateService(
+      notificationText: _repository.isStarted
+          ? 'Catching...'
+          : 'Not Catching...',
+      notificationButtons: _repository.isStarted
+          ? const [
+              NotificationButton(id: 'btn_stop', text: 'Stop'),
+              NotificationButton(id: 'btn_exit', text: 'Exit'),
+            ]
+          : const [
+              NotificationButton(id: 'btn_start', text: 'Start'),
+              NotificationButton(id: 'btn_exit', text: 'Exit'),
+            ],
+    );
   }
 }

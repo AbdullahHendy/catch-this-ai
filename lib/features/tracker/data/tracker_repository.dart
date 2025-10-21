@@ -25,6 +25,9 @@ class TrackerRepository {
   // Flag to indicate if the repository was started
   bool _isStarted = false;
 
+  // Getter for isStarted flag
+  bool get isStarted => _isStarted;
+
   TrackerRepository(this._audioService, this._kwsService);
 
   // Initialize repository and its services
