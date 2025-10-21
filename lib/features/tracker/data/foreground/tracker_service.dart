@@ -149,8 +149,9 @@ class TrackerService {
     // Check if data is EXIT_APP command (sent from TrackerTaskHandler when user presses exit button on notification)
     bool isExitCommand = data is String && data == 'EXIT_APP';
     if (isExitCommand) {
-      stop();
-      SystemNavigator.pop();
+      stop().then((_) {
+        SystemNavigator.pop();
+      });
     }
 
     // Check if the data is debug information (used to send debug strings from the task since it's in a different isolate)
