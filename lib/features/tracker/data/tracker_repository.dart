@@ -63,29 +63,9 @@ class TrackerRepository {
     _isStarted = true;
   }
 
-  // Get all tracked keywords from local storage
-  List<TrackedKeyword> getAllHistory() {
-    return _localStorage.getAllTrackedKeywords();
-  }
-
   // Get tracked keywords for a specific day from local storage
   List<TrackedKeyword> getHistoryForDay(DateTime day) {
     return _localStorage.getTrackedKeywordsDay(day);
-  }
-
-  // Get tracked keywords for the week before the given day from local storage
-  List<TrackedKeyword> getHistoryForWeek(DateTime day) {
-    final weekKeywords = <TrackedKeyword>[];
-    for (int i = 0; i < 7; i++) {
-      final currentDay = day.subtract(Duration(days: i));
-      weekKeywords.addAll(_localStorage.getTrackedKeywordsDay(currentDay));
-    }
-    return weekKeywords;
-  }
-
-  // Get tracked keywords for a specific month from local storage
-  List<TrackedKeyword> getHistoryForMonth(DateTime month) {
-    return _localStorage.getTrackedKeywordsMonth(month);
   }
 
   // Stop audio streaming and keyword spotting
