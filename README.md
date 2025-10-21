@@ -15,6 +15,7 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Home page keeps track of counts of keyword daily
 
 * **TODO**
+    * Make recording run in the backgorund
     * UI/UX needs improvement
     * Missing Stats and Settings page
     * Look into offloading, everythign is currently in main thread

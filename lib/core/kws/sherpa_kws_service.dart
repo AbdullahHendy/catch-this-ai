@@ -28,6 +28,7 @@ class SherpaKwsService {
     sherpa_onnx.initBindings();
     final modelConfig = await getOnlineModelConfig(modelName: modelName);
     final keywordsFilePath = await getKeywordsFilePath(modelName);
+    // Seems to be a fallback threshold value if not specified in keywords file
     const keywordsThreshold = 0.1;
     final kwsConfig = sherpa_onnx.KeywordSpotterConfig(
       model: modelConfig,
