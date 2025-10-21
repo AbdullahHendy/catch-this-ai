@@ -13,9 +13,10 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Detected keywords are stored with their timestamps in a Hive binary database
     * Spotted keywords are published in a {String keyword, DateTime timestamp} and saved in the database
     * Home page keeps track of counts of keyword daily
+    * Apps runns in the background
 
 * **TODO**
-    * Make recording run in the backgorund
+    * Verify behavior when app is "swiped up" and removed from current app and 
     * UI/UX needs improvement
     * Missing Stats and Settings page
     * Look into offloading, everythign is currently in main thread

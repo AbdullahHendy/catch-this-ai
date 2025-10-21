@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:catch_this_ai/features/tracker/presentation/view_model/tracker_view_model.dart';
-import 'package:catch_this_ai/features/tracker/data/tracker_repository.dart';
-import 'package:catch_this_ai/core/audio/audio_stream_service.dart';
-import 'package:catch_this_ai/core/kws/sherpa_kws_service.dart';
 import 'package:catch_this_ai/features/tracker/data/local/tracker_local_storage.dart';
 import 'package:catch_this_ai/app/home_page.dart';
 import '../core/theme/app_theme.dart';
@@ -14,25 +11,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Instantiate audio, KWS services, and tracker repository
-    final audioService = AudioStreamService();
-    final kwsService = SherpaKwsService();
+    // Initialize local storage (DB)
     final localStorage = TrackerLocalStorage();
 
-    final trackerRepository = TrackerRepository(audioService, kwsService);
-
     return ChangeNotifierProvider(
-      create: (_) => TrackingViewModel(trackerRepository, localStorage),
+      create: (_) => TrackingViewModel(localStorage),
       builder: (context, child) {
         final viewModel = context.read<TrackingViewModel>();
-        Future.microtask(() async {
+
+        // Run init and start tracking ONLY after the first frame when Flutter engine and isolate are ready
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
           await viewModel.init();
           await viewModel.start();
         });
+
         return MaterialApp(
           title: 'Catch This AI',
           theme: AppTheme.theme,
-          home: const MyHomePage(),
+          initialRoute: '/',
+          routes: {'/': (context) => const MyHomePage()},
         );
       },
     );

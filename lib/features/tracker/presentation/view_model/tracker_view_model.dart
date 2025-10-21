@@ -1,18 +1,15 @@
 import 'dart:async';
+import 'package:catch_this_ai/features/tracker/data/foreground/tracker_service.dart';
 import 'package:catch_this_ai/features/tracker/data/local/tracker_local_storage.dart';
-import 'package:catch_this_ai/features/tracker/data/tracker_repository.dart';
 import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
 import 'package:flutter/material.dart';
 
 /// ViewModel to manage tracking state and data
 class TrackingViewModel extends ChangeNotifier {
-  // repository instance to handle tracking logic (audio service + kws service)
-  final TrackerRepository _repository;
   // local storage instance to persist tracked keywords
   final TrackerLocalStorage _localStorage;
-
-  // Subscription to have a handle to stop listening to tracked keywords later
-  StreamSubscription<TrackedKeyword>? _trackWordSub;
+  // tracker service singleton to manage audio streaming and keyword spotting
+  final TrackerService _trackerService = TrackerService.instance;
 
   // Day check timer and tracking variables
   Timer? _dayCheckTimer;
@@ -33,7 +30,7 @@ class TrackingViewModel extends ChangeNotifier {
   bool get isRunning => _isRunning;
   bool get isInitialized => _isInitialized;
 
-  TrackingViewModel(this._repository, this._localStorage);
+  TrackingViewModel(this._localStorage);
 
   // Initialize view model
   Future<void> init() async {
@@ -42,11 +39,15 @@ class TrackingViewModel extends ChangeNotifier {
     // Initialize the local storage
     await _localStorage.init();
 
-    // Initialize the repository and its services
-    await _repository.init();
-
     // Load today's history to set initial state
     _loadTodayHistory();
+
+    // Request necessary permissions then initialize the tracker service
+    await _trackerService.requestPermissions();
+    await _trackerService.init();
+
+    // Register a callback to receive tracked keywords from the foreground task
+    _trackerService.registerTrackedKeywordCallback(_onTrackedKeywordReceived);
 
     _isInitialized = true;
     notifyListeners();
@@ -56,28 +57,8 @@ class TrackingViewModel extends ChangeNotifier {
   Future<void> start() async {
     if (_isRunning) return;
 
-    // Start the tracking process in the repository (audio service + kws service)
-    await _repository.start();
-
-    // Listen to tracked keywords (TrackedKeyword) from the repository stream
-    _trackWordSub = _repository.stream.listen((trackedKeyword) {
-      final now = DateTime.now();
-      // Guard for the case when first keyword of the day is detected before the timer resets the day
-      if (!_isSameDay(now, _currentDay)) {
-        _loadTodayHistory();
-      }
-
-      _dayKeywordHistory.insert(0, trackedKeyword);
-      final animatedList = historyListKey?.currentState as AnimatedListState?;
-      animatedList?.insertItem(0);
-      _totalDayCount++;
-
-      // Save the tracked keyword to local storage
-      _localStorage.addTrackedKeyword(trackedKeyword);
-
-      // Notify listeners (UI) about state changes
-      notifyListeners();
-    });
+    // Start the tracker service
+    await _trackerService.start();
 
     // Timer to check for day changes every minute
     _dayCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
@@ -85,6 +66,7 @@ class TrackingViewModel extends ChangeNotifier {
       if (!_isSameDay(now, _currentDay)) {
         // Day has changed, reload today's history (updates _currentDay as well)
         _loadTodayHistory();
+        notifyListeners();
       }
     });
 
@@ -96,8 +78,7 @@ class TrackingViewModel extends ChangeNotifier {
   Future<void> stop() async {
     if (!_isRunning) return;
 
-    await _repository.stop();
-    await _trackWordSub?.cancel();
+    await _trackerService.stop();
     _isRunning = false;
     _dayCheckTimer?.cancel();
     notifyListeners();
@@ -105,10 +86,29 @@ class TrackingViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _trackWordSub?.cancel();
+    _trackerService.dispose();
     _dayCheckTimer?.cancel();
     _isInitialized = false;
     super.dispose();
+  }
+
+  // Callback when a tracked keyword is received from the foreground task
+  void _onTrackedKeywordReceived(TrackedKeyword trackedKeyword) {
+    final now = DateTime.now();
+    // Guard for the case when first keyword of the day is detected before the timer resets the day
+    if (!_isSameDay(now, _currentDay)) {
+      _loadTodayHistory();
+    }
+
+    _dayKeywordHistory.insert(0, trackedKeyword);
+    final animatedList = historyListKey?.currentState as AnimatedListState?;
+    animatedList?.insertItem(0);
+    _totalDayCount++;
+
+    // Save the tracked keyword to local storage
+    _localStorage.addTrackedKeyword(trackedKeyword);
+
+    notifyListeners();
   }
 
   // Helper to load today's history

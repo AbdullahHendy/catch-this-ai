@@ -27,11 +27,15 @@ class AudioStreamService {
   Future<void> start() async {
     if (_isRecording) return;
 
-    // Check and request microphone permission
-    final hasPermission = await _audioRecorder.hasPermission();
-    if (!hasPermission) {
-      throw Exception('Microphone permission denied');
-    }
+    // NOTE: This service is expected to be started in a foreground service (different isolate) that has microphone permission already granted.
+    // TODO: Maybe leave the code below uncommented with a `if(inMainIsolate)` check to
+    // make it generic enough to be used in both foreground service and main isolate.
+
+    // // Check and request microphone permission
+    // final hasPermission = await _audioRecorder.hasPermission();
+    // if (!hasPermission) {
+    //   throw Exception('Microphone permission denied');
+    // }
 
     // Recording configuration
     const sampleRate = 16000;
