@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'package:catch_this_ai/features/tracker/data/local/tracker_local_storage.dart';
 import 'package:catch_this_ai/features/tracker/data/tracker_repository.dart';
 import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
 import 'package:flutter/material.dart';
 
 /// ViewModel to manage tracking state and data
 class TrackingViewModel extends ChangeNotifier {
-  // repository instance to handle tracking logic (audio service + kws service + local storage)
+  // repository instance to handle tracking logic (audio service + kws service)
   final TrackerRepository _repository;
+  // local storage instance to persist tracked keywords
+  final TrackerLocalStorage _localStorage;
 
   // Subscription to have a handle to stop listening to tracked keywords later
   StreamSubscription<TrackedKeyword>? _trackWordSub;
@@ -30,11 +33,15 @@ class TrackingViewModel extends ChangeNotifier {
   bool get isRunning => _isRunning;
   bool get isInitialized => _isInitialized;
 
-  TrackingViewModel(this._repository);
+  TrackingViewModel(this._repository, this._localStorage);
 
   // Initialize view model
   Future<void> init() async {
     if (_isInitialized) return;
+
+    // Initialize the local storage
+    await _localStorage.init();
+
     // Initialize the repository and its services
     await _repository.init();
 
@@ -64,6 +71,10 @@ class TrackingViewModel extends ChangeNotifier {
       final animatedList = historyListKey?.currentState as AnimatedListState?;
       animatedList?.insertItem(0);
       _totalDayCount++;
+
+      // Save the tracked keyword to local storage
+      _localStorage.addTrackedKeyword(trackedKeyword);
+
       // Notify listeners (UI) about state changes
       notifyListeners();
     });
@@ -103,7 +114,7 @@ class TrackingViewModel extends ChangeNotifier {
   // Helper to load today's history
   void _loadTodayHistory() {
     final today = DateTime.now();
-    final todayHistory = _repository.getHistoryForDay(today);
+    final todayHistory = _localStorage.getTrackedKeywordsDay(today);
 
     final animatedList = historyListKey?.currentState as AnimatedListState?;
     for (final keyword in todayHistory) {

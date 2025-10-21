@@ -19,14 +19,10 @@ class MyApp extends StatelessWidget {
     final kwsService = SherpaKwsService();
     final localStorage = TrackerLocalStorage();
 
-    final trackerRepository = TrackerRepository(
-      audioService,
-      kwsService,
-      localStorage,
-    );
+    final trackerRepository = TrackerRepository(audioService, kwsService);
 
     return ChangeNotifierProvider(
-      create: (_) => TrackingViewModel(trackerRepository),
+      create: (_) => TrackingViewModel(trackerRepository, localStorage),
       builder: (context, child) {
         final viewModel = context.read<TrackingViewModel>();
         Future.microtask(() async {
