@@ -16,7 +16,7 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Apps runns in the background
 
 * **TODO**
-    * FIX BUG: When app is "swiped-up" foreground service still runs but app doesn't "register/use" its output (update DB, etc..) and app MUST be force shut from OS Settings->Apps
+    * FIX BUG: When app is "swiped-up" foreground service still runs but app doesn't "register/use" its output (update DB, etc..) and app MUST be force shut from OS Settings->Apps or open the app again to "re-claim" the foreground service. ***This is NOT necessarily a bug, could be desired behavior***
     * UI/UX needs improvement
     * Missing Stats and Settings page
     * Look into offloading, everythign is currently in main thread
