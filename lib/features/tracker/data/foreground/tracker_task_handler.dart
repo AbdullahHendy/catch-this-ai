@@ -42,7 +42,7 @@ class TrackerTaskHandler extends TaskHandler {
     // If so, remember to change `eventAction: ForegroundTaskEventAction.nothing()` in ForegroundTaskOptions in tracker_service.dart
   }
 
-  // onDestroy is called when the foreground task is stopped
+  // onDestroy is called when the foreground task is stopped (FlutterForegroundTask.stopService())
   @override
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     await _sub?.cancel();

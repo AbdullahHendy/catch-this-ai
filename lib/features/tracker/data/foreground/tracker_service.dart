@@ -149,7 +149,7 @@ class TrackerService {
     // Check if data is exitApp command (sent from TrackerTaskHandler when user presses exit button on notification)
     bool isExitCommand = data is String && data == TaskCommands.exitApp;
     if (isExitCommand) {
-      stop().then((_) {
+      dispose().then((_) {
         SystemNavigator.pop();
       });
     }
