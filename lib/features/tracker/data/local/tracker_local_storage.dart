@@ -42,6 +42,16 @@ class TrackerLocalStorage {
         .toList();
   }
 
+  // Get tracked keywords for the week before the given day from local storage
+  List<TrackedKeyword> getTrackedKeywordsWeek(DateTime day) {
+    final weekKeywords = <TrackedKeyword>[];
+    for (int i = 0; i < 7; i++) {
+      final currentDay = day.subtract(Duration(days: i));
+      weekKeywords.addAll(getTrackedKeywordsDay(currentDay));
+    }
+    return weekKeywords;
+  }
+
   // Retrieve all tracked keywords in a month
   List<TrackedKeyword> getTrackedKeywordsMonth(DateTime month) {
     return _box.values

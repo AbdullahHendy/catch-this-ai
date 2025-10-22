@@ -14,3 +14,19 @@ class TrackedKeyword {
 
   const TrackedKeyword(this.keyword, this.timestamp);
 }
+
+/// Extension to serialize/deserialize for isolates communication
+extension TrackedKeywordSerialization on TrackedKeyword {
+  Map<String, dynamic> toMap() {
+    return {'keyword': keyword, 'timestamp': timestamp.toIso8601String()};
+  }
+
+  static TrackedKeyword fromMap(Map<String, dynamic> map) {
+    return TrackedKeyword(
+      map['keyword'] as String? ?? '',
+      DateTime.parse(
+        map['timestamp'] as String? ?? DateTime(2000).toIso8601String(),
+      ),
+    );
+  }
+}
