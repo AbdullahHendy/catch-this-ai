@@ -74,7 +74,7 @@ class TrackerTaskHandler extends TaskHandler {
 
       case 'btn_exit':
         // Callback handles app exit in the main isolate, see _onReceiveTaskData in tracker_service.dart
-        FlutterForegroundTask.sendDataToMain('EXIT_APP');
+        FlutterForegroundTask.sendDataToMain(TaskCommands.exitApp);
 
       default:
         break;
@@ -112,4 +112,10 @@ class TrackerTaskHandler extends TaskHandler {
             ],
     );
   }
+}
+
+/// Commands that can be sent to the foreground task
+class TaskCommands {
+  static const String exitApp = 'EXIT_APP';
+  static const String debugHeartbeat = 'DEBUG: HEARTBEAT';
 }

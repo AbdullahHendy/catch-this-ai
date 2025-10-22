@@ -146,8 +146,8 @@ class TrackerService {
       }
     }
 
-    // Check if data is EXIT_APP command (sent from TrackerTaskHandler when user presses exit button on notification)
-    bool isExitCommand = data is String && data == 'EXIT_APP';
+    // Check if data is exitApp command (sent from TrackerTaskHandler when user presses exit button on notification)
+    bool isExitCommand = data is String && data == TaskCommands.exitApp;
     if (isExitCommand) {
       stop().then((_) {
         SystemNavigator.pop();
@@ -161,7 +161,8 @@ class TrackerService {
     }
   }
 
-  void dispose() {
+  Future<void> dispose() async {
+    await stop();
     // Remove a callback to receive data sent from the TaskHandler.
     FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
     _callbacks.clear();

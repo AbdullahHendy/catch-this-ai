@@ -85,10 +85,11 @@ class TrackingViewModel extends ChangeNotifier {
   }
 
   @override
-  void dispose() {
-    _trackerService.dispose();
+  Future<void> dispose() async {
+    await _trackerService.dispose();
     _dayCheckTimer?.cancel();
     _isInitialized = false;
+    _isRunning = false;
     super.dispose();
   }
 
