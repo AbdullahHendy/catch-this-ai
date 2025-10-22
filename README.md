@@ -2,6 +2,12 @@
 
 Tired of hearing about 'AI' every two seconds? See how many times you've survived the AI overload!
 
+# Current behavior
+* On start, app will listen for [keywords](./assets/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01/keywords.txt) and show a `persistent/sticky` notification indicating so.
+* Main page shows daily stats only.
+* `persistent/sticky` notification has buttons for control including `start`, `stop`, and `exit`. 
+* When app is removed from recent apps stack `"swiped up"`, the whole app shut and no more recording is happening.
+* App doesn't start on device start up, but if open, will survive app `update/reinstalls`.
 
 # Progress 
 * **DONE**
@@ -16,7 +22,7 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Apps runns in the background
 
 * **TODO**
-    * FIX BUG: When app is "swiped-up" foreground service still runs but app doesn't "register/use" its output (update DB, etc..) and app MUST be force shut from OS Settings->Apps or open the app again to "re-claim" the foreground service. ***This is NOT necessarily a bug, could be desired behavior***
+    * Verify if the [current behavior](#current-behavior) is the desired one
     * UI/UX needs improvement
     * Missing Stats and Settings page
     * Look into offloading, everythign is currently in main thread
