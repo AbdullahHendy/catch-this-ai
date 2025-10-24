@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 /// Card to display the daily count of tracked keywords
-class DailyCountCard extends StatelessWidget {
-  const DailyCountCard({super.key, required this.totalDayCount});
+class DailyTrackerCountCard extends StatelessWidget {
+  const DailyTrackerCountCard({super.key, required this.totalDayCount});
   final int totalDayCount;
 
   @override

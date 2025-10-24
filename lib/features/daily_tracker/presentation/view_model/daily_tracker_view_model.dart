@@ -1,15 +1,15 @@
 import 'dart:async';
-import 'package:catch_this_ai/features/tracker/data/foreground/tracker_service.dart';
-import 'package:catch_this_ai/features/tracker/data/local/tracker_local_storage.dart';
-import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/data/tracking_repository.dart';
+import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
 import 'package:flutter/material.dart';
 
 /// ViewModel to manage tracking state and data
-class TrackingViewModel extends ChangeNotifier {
-  // local storage instance to persist tracked keywords
-  final TrackerLocalStorage _localStorage;
-  // tracker service singleton to manage audio streaming and keyword spotting
-  final TrackerService _trackerService = TrackerService.instance;
+class DailyTrackerViewModel extends ChangeNotifier {
+  // instance of data broker/repository
+  final TrackingRepository _repo;
+
+  // Subscribe to the tracked keywords stream to be able to dispose it later
+  StreamSubscription<TrackedKeyword>? _sub;
 
   // Day check timer and tracking variables
   Timer? _dayCheckTimer;
@@ -30,35 +30,33 @@ class TrackingViewModel extends ChangeNotifier {
   bool get isRunning => _isRunning;
   bool get isInitialized => _isInitialized;
 
-  TrackingViewModel(this._localStorage);
+  DailyTrackerViewModel(this._repo);
 
   // Initialize view model
   Future<void> init() async {
     if (_isInitialized) return;
 
     // Initialize the local storage
-    await _localStorage.init();
+    await _repo.init();
 
     // Load today's history to set initial state
     _loadTodayHistory();
-
-    // Request necessary permissions then initialize the tracker service
-    await _trackerService.requestPermissions();
-    await _trackerService.init();
-
-    // Register a callback to receive tracked keywords from the foreground task
-    _trackerService.registerTrackedKeywordCallback(_onTrackedKeywordReceived);
 
     _isInitialized = true;
     notifyListeners();
   }
 
-  // Start tracking process
+  // Start listening for tracked keywords
   Future<void> start() async {
     if (_isRunning) return;
 
-    // Start the tracker service
-    await _trackerService.start();
+    // Start the repository
+    await _repo.start();
+
+    // Subscribe to the tracked keywords stream
+    _sub = _repo.stream.listen((trackedKeyword) {
+      _onTrackedKeywordReceived(trackedKeyword);
+    });
 
     // Timer to check for day changes every minute
     _dayCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
@@ -78,7 +76,8 @@ class TrackingViewModel extends ChangeNotifier {
   Future<void> stop() async {
     if (!_isRunning) return;
 
-    await _trackerService.stop();
+    await _repo.stop();
+    await _sub?.cancel();
     _isRunning = false;
     _dayCheckTimer?.cancel();
     notifyListeners();
@@ -86,7 +85,8 @@ class TrackingViewModel extends ChangeNotifier {
 
   @override
   Future<void> dispose() async {
-    await _trackerService.dispose();
+    await _repo.dispose();
+    await _sub?.cancel();
     _dayCheckTimer?.cancel();
     _isInitialized = false;
     _isRunning = false;
@@ -94,7 +94,7 @@ class TrackingViewModel extends ChangeNotifier {
   }
 
   // Callback when a tracked keyword is received from the foreground task
-  void _onTrackedKeywordReceived(TrackedKeyword trackedKeyword) {
+  Future<void> _onTrackedKeywordReceived(TrackedKeyword trackedKeyword) async {
     final now = DateTime.now();
     // Guard for the case when first keyword of the day is detected before the timer resets the day
     if (!_isSameDay(now, _currentDay)) {
@@ -106,21 +106,18 @@ class TrackingViewModel extends ChangeNotifier {
     animatedList?.insertItem(0);
     _totalDayCount++;
 
-    // Save the tracked keyword to local storage
-    _localStorage.addTrackedKeyword(trackedKeyword);
-
     notifyListeners();
   }
 
   // Helper to load today's history
   void _loadTodayHistory() {
     final today = DateTime.now();
-    final todayHistory = _localStorage.getTrackedKeywordsDay(today);
+    final todayHistory = _repo.getDayKeywords(today);
 
     final animatedList = historyListKey?.currentState as AnimatedListState?;
     for (final keyword in todayHistory) {
       _dayKeywordHistory.insert(0, keyword);
-      animatedList?.insertItem(0, duration: Duration(milliseconds: 1000));
+      animatedList?.insertItem(0);
     }
 
     _totalDayCount = _dayKeywordHistory.length;

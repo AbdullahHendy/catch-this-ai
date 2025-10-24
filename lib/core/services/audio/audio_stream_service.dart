@@ -23,6 +23,9 @@ class AudioStreamService {
   // similar to what's done BELOW to get raw byte data from the recorder stream: recordStream.listen((data) { ... });
   Stream<Float32List> get stream => _controller.stream;
 
+  // Getter for _isRecording flag
+  bool get isRecording => _isRecording;
+
   // Start audio recording and streaming
   Future<void> start() async {
     if (_isRecording) return;

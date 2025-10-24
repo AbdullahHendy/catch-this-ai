@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
-import 'package:catch_this_ai/features/tracker/data/foreground/tracker_task_handler.dart';
+import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/services/foreground/tracking/tracking_task_handler.dart';
 import 'package:record/record.dart';
 
 // Callback type definition for handling tracked keywords from the foreground service
@@ -11,10 +11,9 @@ typedef TrackedKeywordCallback = void Function(TrackedKeyword);
 
 /// Singleton tracker service to manage foreground tracking tasks
 /// It's made singleton since only one tracking service should be active at a time
-class TrackerService {
-  TrackerService._();
-
-  static final TrackerService instance = TrackerService._();
+class TrackingService {
+  TrackingService._();
+  static final TrackingService instance = TrackingService._();
 
   // ------------- Service API -------------
   Future<void> requestPermissions() async {

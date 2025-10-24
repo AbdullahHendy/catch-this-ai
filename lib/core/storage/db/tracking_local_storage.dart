@@ -1,18 +1,28 @@
-import 'package:catch_this_ai/features/tracker/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
 import 'package:hive_flutter/adapters.dart';
 
-/// Local storage service for tracking keywords using Hive
-class TrackerLocalStorage {
+/// Singleton local storage service for tracking keywords using Hive
+/// It's made singleton to ensure only one instance manages the Hive box
+class TrackingLocalStorage {
+  TrackingLocalStorage._();
+  static final TrackingLocalStorage instance = TrackingLocalStorage._();
+
   late Box<TrackedKeyword> _box;
 
-  /// Initialize Hive and open the box for tracked keywords
+  // Initialize Hive and open the box for tracked keywords
   Future<void> init() async {
     const String boxName = 'tracked_keywords_box';
-    const int adapterId = 0;
+
+    // Check if box is already opened
+    if (Hive.isBoxOpen(boxName)) {
+      _box = Hive.box<TrackedKeyword>(boxName);
+      return;
+    }
 
     await Hive.initFlutter();
 
     // Register the adapter for TrackedKeyword if not already registered
+    const int adapterId = 0;
     if (!Hive.isAdapterRegistered(adapterId)) {
       Hive.registerAdapter(TrackedKeywordAdapter());
     }

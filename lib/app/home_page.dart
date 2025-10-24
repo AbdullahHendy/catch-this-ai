@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:catch_this_ai/features/tracker/presentation/pages/tracker_page.dart';
+import 'package:catch_this_ai/features/daily_tracker/presentation/pages/daily_tracker_page.dart';
 
 /// Home page with navigation to different sections
 class MyHomePage extends StatefulWidget {
@@ -17,7 +17,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     Widget page = switch (selectedIndex) {
-      0 => const TrackerPage(),
+      0 => const DailyTrackerPage(),
       1 => const Placeholder(), // TODO: replace with StatsPage() when ready
       2 => const Placeholder(), // TODO: replace with SettingsPage() when ready
       _ => const SizedBox(),

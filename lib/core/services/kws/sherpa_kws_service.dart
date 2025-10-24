@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:catch_this_ai/core/kws/sherpa_model_loader.dart';
+import 'package:catch_this_ai/core/services/kws/sherpa_model_loader.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 
 /// Service to manage Sherpa KWS model loading and keyword retrieval
