@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/services.dart';
+import 'package:flutter_exit_app/flutter_exit_app.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
@@ -148,8 +148,9 @@ class TrackingService {
     // Check if data is exitApp command (sent from TrackerTaskHandler when user presses exit button on notification)
     bool isExitCommand = data is String && data == TaskCommands.exitApp;
     if (isExitCommand) {
-      dispose().then((_) {
-        SystemNavigator.pop();
+      dispose().then((_) async {
+        // SystemNavigator.pop();
+        await FlutterExitApp.exitApp();
       });
     }
 
