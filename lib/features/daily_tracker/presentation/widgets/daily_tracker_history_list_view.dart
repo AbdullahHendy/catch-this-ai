@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:catch_this_ai/features/tracker/presentation/view_model/tracker_view_model.dart';
+import 'package:catch_this_ai/features/daily_tracker/presentation/view_model/daily_tracker_view_model.dart';
 
 /// Widget to display the list of tracked keywords for the day
-class DayHistoryListView extends StatefulWidget {
-  const DayHistoryListView({super.key});
+class DailyTrackerHistoryListView extends StatefulWidget {
+  const DailyTrackerHistoryListView({super.key});
 
   @override
-  State<DayHistoryListView> createState() => _DayHistoryListViewState();
+  State<DailyTrackerHistoryListView> createState() =>
+      _DailyTrackerHistoryListViewState();
 }
 
-class _DayHistoryListViewState extends State<DayHistoryListView> {
+class _DailyTrackerHistoryListViewState
+    extends State<DailyTrackerHistoryListView> {
   // GlobalKey for AnimatedList to manage list state
   // This is used to access the AnimatedListState for inserting/removing items
   final _key = GlobalKey();
@@ -30,8 +32,8 @@ class _DayHistoryListViewState extends State<DayHistoryListView> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    // Access the TrackingViewModel
-    final trackerViewModel = context.watch<TrackingViewModel>();
+    // Access the DailyTrackerViewModel
+    final trackerViewModel = context.watch<DailyTrackerViewModel>();
     trackerViewModel.historyListKey = _key;
 
     // Formatters for only date and only time
