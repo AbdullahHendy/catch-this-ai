@@ -19,7 +19,6 @@ class DailyTrackerViewModel extends ChangeNotifier {
   final List<TrackedKeyword> _dayKeywordHistory = [];
   int _totalDayCount = 0;
   bool _isRunning = false;
-  bool _isInitialized = false;
 
   // GlobalKey for AnimatedList in history view
   GlobalKey? historyListKey;
@@ -28,30 +27,16 @@ class DailyTrackerViewModel extends ChangeNotifier {
   List<TrackedKeyword> get dayKeywordHistory => _dayKeywordHistory;
   int get totalDayCount => _totalDayCount;
   bool get isRunning => _isRunning;
-  bool get isInitialized => _isInitialized;
 
   DailyTrackerViewModel(this._repo);
-
-  // Initialize view model
-  Future<void> init() async {
-    if (_isInitialized) return;
-
-    // Initialize the local storage
-    await _repo.init();
-
-    // Load today's history to set initial state
-    _loadTodayHistory();
-
-    _isInitialized = true;
-    notifyListeners();
-  }
 
   // Start listening for tracked keywords
   Future<void> start() async {
     if (_isRunning) return;
 
-    // Start the repository
-    await _repo.start();
+    // Load today's history to set initial states
+    _loadTodayHistory();
+    notifyListeners();
 
     // Subscribe to the tracked keywords stream
     _sub = _repo.stream.listen((trackedKeyword) {
@@ -76,7 +61,6 @@ class DailyTrackerViewModel extends ChangeNotifier {
   Future<void> stop() async {
     if (!_isRunning) return;
 
-    await _repo.stop();
     await _sub?.cancel();
     _isRunning = false;
     _dayCheckTimer?.cancel();
@@ -85,10 +69,8 @@ class DailyTrackerViewModel extends ChangeNotifier {
 
   @override
   Future<void> dispose() async {
-    await _repo.dispose();
     await _sub?.cancel();
     _dayCheckTimer?.cancel();
-    _isInitialized = false;
     _isRunning = false;
     super.dispose();
   }
