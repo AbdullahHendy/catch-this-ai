@@ -40,13 +40,21 @@ class TrackingLocalStorage {
   }
 
   // Get tracked keywords for the week before the given day from local storage
+  // Week is considered to start from Monday to Sunday
   List<TrackedKeyword> getTrackedKeywordsWeek(DateTime day) {
-    final weekKeywords = <TrackedKeyword>[];
-    for (int i = 0; i < 7; i++) {
-      final currentDay = day.subtract(Duration(days: i));
-      weekKeywords.addAll(getTrackedKeywordsDay(currentDay));
-    }
-    return weekKeywords;
+    final startOfWeek = day.subtract(
+      Duration(days: day.weekday - DateTime.monday),
+    );
+    final endOfWeek = startOfWeek.add(const Duration(days: 7)); // Next Monday
+    return _trackingBox.values
+        .where(
+          (keyword) =>
+              // Not before start of week to make it inclusive
+              !keyword.timestamp.isBefore(startOfWeek) &&
+              // Before the next monday to make it inclusive of the last day (sunday)
+              keyword.timestamp.isBefore(endOfWeek),
+        )
+        .toList();
   }
 
   // Retrieve all tracked keywords in a month
