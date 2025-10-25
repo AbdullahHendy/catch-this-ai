@@ -11,9 +11,8 @@ class DailyTrackerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<DailyTrackerViewModel>();
-    // final dayKeywords = appState.dayKeywordHistory;
-    final count = appState.totalDayCount;
+    final dailyTrackerState = context.watch<DailyTrackerViewModel>();
+    final count = dailyTrackerState.totalDayCount;
 
     return Scaffold(
       appBar: AppBar(
