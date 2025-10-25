@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:catch_this_ai/core/data/tracking_repository.dart';
 import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/utils/time_utils.dart';
 import 'package:flutter/material.dart';
 
 /// ViewModel to manage tracking state and data
@@ -46,7 +47,7 @@ class DailyTrackerViewModel extends ChangeNotifier {
     // Timer to check for day changes every minute
     _dayCheckTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       final now = DateTime.now();
-      if (!_isSameDay(now, _currentDay)) {
+      if (!isSameDay(now, _currentDay)) {
         // Day has changed, reload today's history (updates _currentDay as well)
         _loadTodayHistory();
         notifyListeners();
@@ -79,7 +80,7 @@ class DailyTrackerViewModel extends ChangeNotifier {
   Future<void> _onTrackedKeywordReceived(TrackedKeyword trackedKeyword) async {
     final now = DateTime.now();
     // Guard for the case when first keyword of the day is detected before the timer resets the day
-    if (!_isSameDay(now, _currentDay)) {
+    if (!isSameDay(now, _currentDay)) {
       _loadTodayHistory();
     }
 
@@ -107,12 +108,5 @@ class DailyTrackerViewModel extends ChangeNotifier {
 
     _totalDayCount = _dayKeywordHistory.length;
     _currentDay = today;
-  }
-
-  // Helper to check if a two dates are on the same day
-  bool _isSameDay(DateTime now, DateTime currentDay) {
-    return now.year == currentDay.year &&
-        now.month == currentDay.month &&
-        now.day == currentDay.day;
   }
 }
