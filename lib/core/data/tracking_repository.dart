@@ -20,6 +20,10 @@ class TrackingRepository {
   // trackingRepository.stream.listen((trackedKeyword) { ... });
   Stream<TrackedKeyword> get stream => _controller.stream;
 
+  // Cached TrackedKeywords from the local storage
+  // TODO: think about maybe only caching keywords for a limited time period if memory becomes an issue
+  List<TrackedKeyword> _cachedKeywords = [];
+
   bool _isInitialized = false;
 
   TrackingRepository({
@@ -40,6 +44,9 @@ class TrackingRepository {
 
     // Register callback for tracked keywords from foreground service
     _trackingService.registerTrackedKeywordCallback(_onTrackedKeywordReceived);
+
+    // Load keywords from local storage into cache
+    _cachedKeywords = _localStorage.getAllTrackedKeywords();
 
     _isInitialized = true;
   }
@@ -65,18 +72,48 @@ class TrackingRepository {
   Future<void> _onTrackedKeywordReceived(TrackedKeyword keyword) async {
     // Persist the keyword into local storage and broadcast it through the stream to listeners
     await _localStorage.addTrackedKeyword(keyword);
+    _cachedKeywords.add(keyword);
     _controller.add(keyword);
   }
 
-  // Query tracked keywords for a specific day from DB
-  List<TrackedKeyword> getDayKeywords(DateTime day) =>
-      _localStorage.getTrackedKeywordsDay(day);
+  // Query cached keywords for a specific day from local storage
+  List<TrackedKeyword> getDayKeywords(DateTime day) {
+    return _cachedKeywords
+        .where(
+          (keyword) =>
+              keyword.timestamp.year == day.year &&
+              keyword.timestamp.month == day.month &&
+              keyword.timestamp.day == day.day,
+        )
+        .toList();
+  }
 
-  // Query tracked keywords for a specific week from DB
-  List<TrackedKeyword> getWeekKeywords(DateTime day) =>
-      _localStorage.getTrackedKeywordsWeek(day);
+  // Query cached keywords for a specific week from local storage
+  // Week is considered to start from Monday to Sunday
+  List<TrackedKeyword> getWeekKeywords(DateTime day) {
+    final startOfWeek = day.subtract(
+      Duration(days: day.weekday - DateTime.monday),
+    );
+    final endOfWeek = startOfWeek.add(const Duration(days: 7)); // Next Monday
+    return _cachedKeywords
+        .where(
+          (keyword) =>
+              // Not before start of week to make it inclusive
+              !keyword.timestamp.isBefore(startOfWeek) &&
+              // Before the next monday to make it inclusive of the last day (sunday)
+              keyword.timestamp.isBefore(endOfWeek),
+        )
+        .toList();
+  }
 
-  // Query tracked keywords for a specific month from DB
-  List<TrackedKeyword> getMonthKeywords(DateTime month) =>
-      _localStorage.getTrackedKeywordsMonth(month);
+  // Query cached keywords for a specific month from local storage
+  List<TrackedKeyword> getMonthKeywords(DateTime month) {
+    return _cachedKeywords
+        .where(
+          (keyword) =>
+              keyword.timestamp.year == month.year &&
+              keyword.timestamp.month == month.month,
+        )
+        .toList();
+  }
 }
