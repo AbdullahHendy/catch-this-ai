@@ -20,6 +20,14 @@ class TrackingRepository {
   // trackingRepository.stream.listen((trackedKeyword) { ... });
   Stream<TrackedKeyword> get stream => _controller.stream;
 
+  // Cached TrackedKeywords from the local storage
+  // TODO: think about maybe only caching keywords for a limited time period if memory becomes an issue
+  List<TrackedKeyword> _cachedKeywords = [];
+
+  // Map of DateTime to List<TrackedKeyword> to group keywords by day/week/month
+  // This is useful when dealing with running window of time periods
+  Map<DateTime, List<TrackedKeyword>> _keywordsByDayMap = {};
+
   bool _isInitialized = false;
 
   TrackingRepository({
@@ -41,6 +49,12 @@ class TrackingRepository {
     // Register callback for tracked keywords from foreground service
     _trackingService.registerTrackedKeywordCallback(_onTrackedKeywordReceived);
 
+    // Load keywords from local storage into cache
+    _cachedKeywords = _localStorage.getAllTrackedKeywords();
+
+    // Group cached keywords by day for easier querying later
+    _keywordsByDayMap = _groupKeywordsByDay(_cachedKeywords);
+
     _isInitialized = true;
   }
 
@@ -58,25 +72,109 @@ class TrackingRepository {
   Future<void> dispose() async {
     await _trackingService.dispose();
     await _controller.close();
+    _cachedKeywords.clear();
+    _keywordsByDayMap.clear();
     _isInitialized = false;
+  }
+
+  // Query cached keywords for a specific day from local storage
+  List<TrackedKeyword> getDayKeywords(DateTime day) {
+    return _cachedKeywords
+        .where(
+          (keyword) =>
+              keyword.timestamp.year == day.year &&
+              keyword.timestamp.month == day.month &&
+              keyword.timestamp.day == day.day,
+        )
+        .toList();
+  }
+
+  // Query cached keywords for a specific week from local storage
+  // Week is considered to start from Monday to Sunday
+  List<TrackedKeyword> getWeekKeywords(DateTime day) {
+    final startOfWeek = day.subtract(
+      Duration(days: day.weekday - DateTime.monday),
+    );
+    final endOfWeek = startOfWeek.add(const Duration(days: 7)); // Next Monday
+    return _cachedKeywords
+        .where(
+          (keyword) =>
+              // Not before start of week to make it inclusive
+              !keyword.timestamp.isBefore(startOfWeek) &&
+              // Before the next monday to make it inclusive of the last day (sunday)
+              keyword.timestamp.isBefore(endOfWeek),
+        )
+        .toList();
+  }
+
+  // Query cached keywords for a specific month from local storage
+  List<TrackedKeyword> getMonthKeywords(DateTime month) {
+    return _cachedKeywords
+        .where(
+          (keyword) =>
+              keyword.timestamp.year == month.year &&
+              keyword.timestamp.month == month.month,
+        )
+        .toList();
   }
 
   // Callback when the foreground isolate sends a new tracked keyword
   Future<void> _onTrackedKeywordReceived(TrackedKeyword keyword) async {
+    // Prevent duplicates: check if the keyword with the same timestamp already exists
+    // Although rare, it can happen on quick/hot restarts of the foreground service
+    // Foreground service may resend the last tracked keyword on restart
+    // This was observed during testing (running hot reload multiple times fast)
+    // TODO: should probably identify root cause, see if a big problem during normal usage
+    if (_cachedKeywords.any(
+      (ck) =>
+          ck.timestamp == keyword.timestamp && ck.keyword == keyword.keyword,
+    )) {
+      return;
+    }
+
     // Persist the keyword into local storage and broadcast it through the stream to listeners
     await _localStorage.addTrackedKeyword(keyword);
+    // Update cached keywords
+    _cachedKeywords.add(keyword);
+    // Update keywords by day map
+    final dayKey = DateTime(
+      keyword.timestamp.year,
+      keyword.timestamp.month,
+      keyword.timestamp.day,
+    );
+    _keywordsByDayMap.putIfAbsent(dayKey, () => []).add(keyword);
+    // Broadcast the new keyword
     _controller.add(keyword);
   }
 
-  // Query tracked keywords for a specific day from DB
-  List<TrackedKeyword> getDayKeywords(DateTime day) =>
-      _localStorage.getTrackedKeywordsDay(day);
+  // Group cached keywords by day
+  Map<DateTime, List<TrackedKeyword>> _groupKeywordsByDay(
+    List<TrackedKeyword> keywords,
+  ) {
+    final Map<DateTime, List<TrackedKeyword>> grouped = {};
 
-  // Query tracked keywords for a specific week from DB
-  List<TrackedKeyword> getWeekKeywords(DateTime day) =>
-      _localStorage.getTrackedKeywordsWeek(day);
+    for (final keyword in keywords) {
+      final day = DateTime(
+        keyword.timestamp.year,
+        keyword.timestamp.month,
+        keyword.timestamp.day,
+      );
 
-  // Query tracked keywords for a specific month from DB
-  List<TrackedKeyword> getMonthKeywords(DateTime month) =>
-      _localStorage.getTrackedKeywordsMonth(month);
+      grouped.putIfAbsent(day, () => []).add(keyword);
+    }
+
+    return grouped;
+  }
+
+  // Get map of most recent n days and their tracked keywords
+  Map<DateTime, List<TrackedKeyword>> getLastDaysKeywordsMap(int n) {
+    // See: https://stackoverflow.com/questions/65398100/how-can-i-grab-the-last-n-elements-in-a-mapint-dynamic
+
+    // First sort the entries by DateTime key, Map guarantees insertion order but we still need to sort
+    // in case entries were added out of order from DB when caching in init()
+    final sortedEntries = _keywordsByDayMap.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return Map.fromEntries(sortedEntries.reversed.take(n).toList().reversed);
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:catch_this_ai/features/stats/presentation/pages/stats_page.dart';
 import 'package:flutter/material.dart';
 import 'package:catch_this_ai/features/daily_tracker/presentation/pages/daily_tracker_page.dart';
 
@@ -18,7 +19,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     Widget page = switch (selectedIndex) {
       0 => const DailyTrackerPage(),
-      1 => const Placeholder(), // TODO: replace with StatsPage() when ready
+      1 => const StatsPage(),
       2 => const Placeholder(), // TODO: replace with SettingsPage() when ready
       _ => const SizedBox(),
     };

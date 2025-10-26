@@ -149,7 +149,6 @@ class TrackingService {
     bool isExitCommand = data is String && data == TaskCommands.exitApp;
     if (isExitCommand) {
       dispose().then((_) async {
-        // SystemNavigator.pop();
         await FlutterExitApp.exitApp();
       });
     }

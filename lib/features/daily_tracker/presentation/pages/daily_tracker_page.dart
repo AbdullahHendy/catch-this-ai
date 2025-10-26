@@ -1,8 +1,8 @@
-import 'package:catch_this_ai/features/daily_tracker/presentation/widgets/daily_tracker_history_list_view.dart';
+import 'package:catch_this_ai/features/daily_tracker/widgets/daily_tracker_history_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:catch_this_ai/features/daily_tracker/presentation/view_model/daily_tracker_view_model.dart';
-import 'package:catch_this_ai/features/daily_tracker/presentation/widgets/daily_tracker_count_card.dart';
+import 'package:catch_this_ai/features/daily_tracker/widgets/daily_tracker_count_card.dart';
 
 /// Main page for tracking keywords
 // TODO: 1. Think about adding more UI elements below the DailyCountCard
@@ -11,9 +11,8 @@ class DailyTrackerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<DailyTrackerViewModel>();
-    // final dayKeywords = appState.dayKeywordHistory;
-    final count = appState.totalDayCount;
+    final dailyTrackerState = context.watch<DailyTrackerViewModel>();
+    final count = dailyTrackerState.totalDayCount;
 
     return Scaffold(
       appBar: AppBar(

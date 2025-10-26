@@ -1,11 +1,10 @@
-import 'package:catch_this_ai/core/data/tracking_repository.dart';
-import 'package:catch_this_ai/core/services/foreground/tracking/tracking_service.dart';
+import 'package:catch_this_ai/app/di/app_initializer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:catch_this_ai/features/daily_tracker/presentation/view_model/daily_tracker_view_model.dart';
-import 'package:catch_this_ai/core/storage/db/tracking_local_storage.dart';
 import 'package:catch_this_ai/app/home_page.dart';
-import '../core/theme/app_theme.dart';
+import 'package:catch_this_ai/features/daily_tracker/presentation/view_model/daily_tracker_view_model.dart';
+import 'package:catch_this_ai/features/stats/presentation/view_model/stats_view_model.dart';
+import 'package:catch_this_ai/core/theme/app_theme.dart';
 
 /// Main application widget
 class MyApp extends StatelessWidget {
@@ -13,31 +12,38 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize data broker/repository dependencies (singleton instances)
-    final localStorage = TrackingLocalStorage.instance;
-    final trackingService = TrackingService.instance;
-    // Create the data broker/repository
-    final TrackingRepository trackingRepository = TrackingRepository(
-      localStorage: localStorage,
-      trackingService: trackingService,
-    );
+    return FutureBuilder<AppDependencies>(
+      // Ensure all dependencies are ready before anything else runs
+      future: AppInitializer.initialize(),
+      builder: (context, snapshot) {
+        // Circular progress indicator while waiting for DBManager init
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const MaterialApp(
+            // TODO: maybe replace with a splash screen later
+            home: Scaffold(body: Center(child: CircularProgressIndicator())),
+          );
+        }
 
-    return ChangeNotifierProvider(
-      create: (_) => DailyTrackerViewModel(trackingRepository),
-      builder: (context, child) {
-        final viewModel = context.read<DailyTrackerViewModel>();
+        // Extract dependencies
+        final deps = snapshot.data!;
 
-        // Run init and start tracking ONLY after the first frame when Flutter engine and isolate are ready
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await viewModel.init();
-          await viewModel.start();
-        });
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider<DailyTrackerViewModel>(
+              create: (_) =>
+                  DailyTrackerViewModel(deps.trackingRepository)..start(),
+            ),
+            ChangeNotifierProvider<StatsViewModel>(
+              create: (_) => StatsViewModel(deps.trackingRepository)..start(),
+            ),
+          ],
 
-        return MaterialApp(
-          title: 'Catch This AI',
-          theme: AppTheme.theme,
-          initialRoute: '/',
-          routes: {'/': (context) => const MyHomePage()},
+          child: MaterialApp(
+            title: 'Catch This AI',
+            theme: AppTheme.theme,
+            initialRoute: '/',
+            routes: {'/': (context) => const MyHomePage()},
+          ),
         );
       },
     );

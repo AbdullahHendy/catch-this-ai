@@ -41,6 +41,7 @@ dependencies:
   intl: ^0.20.2
   flutter_foreground_task: ^9.1.0
   flutter_exit_app: ^2.0.0
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:
