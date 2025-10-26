@@ -226,7 +226,11 @@ class StatsViewModel extends ChangeNotifier {
   }
 
   void _loadLastMonthHistoryCount() {
-    final lastMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+    // Calculate last month, if current month is January, last month is December of previous year
+    final lastMonth = _currentMonth.month == DateTime.january
+        ? DateTime(_currentMonth.year - 1, DateTime.december)
+        : DateTime(_currentMonth.year, _currentMonth.month - 1);
+
     final lastMonthHistory = _repo.getMonthKeywords(lastMonth);
 
     _totalLastMonthCount = lastMonthHistory.length;
