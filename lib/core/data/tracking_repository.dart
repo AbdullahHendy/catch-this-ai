@@ -92,11 +92,15 @@ class TrackingRepository {
   // Query cached keywords for a specific week from local storage
   // Week is considered to start from Monday to Sunday
   List<TrackedKeyword> getWeekKeywords(DateTime day) {
-    final startOfWeek = day.subtract(
-      Duration(days: day.weekday - DateTime.monday),
+    // Get start of the day to exactly find the beginning of the week
+    final startOfDay = DateTime(day.year, day.month, day.day);
+
+    final startOfWeek = startOfDay.subtract(
+      Duration(days: startOfDay.weekday - DateTime.monday),
     );
     final endOfWeek = startOfWeek.add(const Duration(days: 7)); // Next Monday
-    return _cachedKeywords
+
+    final weekKeywords = _cachedKeywords
         .where(
           (keyword) =>
               // Not before start of week to make it inclusive
@@ -105,6 +109,8 @@ class TrackingRepository {
               keyword.timestamp.isBefore(endOfWeek),
         )
         .toList();
+
+    return weekKeywords;
   }
 
   // Query cached keywords for a specific month from local storage
