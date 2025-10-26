@@ -24,6 +24,10 @@ class TrackingRepository {
   // TODO: think about maybe only caching keywords for a limited time period if memory becomes an issue
   List<TrackedKeyword> _cachedKeywords = [];
 
+  // Map of DateTime to List<TrackedKeyword> to group keywords by day/week/month
+  // This is useful when dealing with running window of time periods
+  Map<DateTime, List<TrackedKeyword>> _keywordsByDayMap = {};
+
   bool _isInitialized = false;
 
   TrackingRepository({
@@ -48,6 +52,9 @@ class TrackingRepository {
     // Load keywords from local storage into cache
     _cachedKeywords = _localStorage.getAllTrackedKeywords();
 
+    // Group cached keywords by day for easier querying later
+    _keywordsByDayMap = _groupKeywordsByDay(_cachedKeywords);
+
     _isInitialized = true;
   }
 
@@ -65,15 +72,9 @@ class TrackingRepository {
   Future<void> dispose() async {
     await _trackingService.dispose();
     await _controller.close();
+    _cachedKeywords.clear();
+    _keywordsByDayMap.clear();
     _isInitialized = false;
-  }
-
-  // Callback when the foreground isolate sends a new tracked keyword
-  Future<void> _onTrackedKeywordReceived(TrackedKeyword keyword) async {
-    // Persist the keyword into local storage and broadcast it through the stream to listeners
-    await _localStorage.addTrackedKeyword(keyword);
-    _cachedKeywords.add(keyword);
-    _controller.add(keyword);
   }
 
   // Query cached keywords for a specific day from local storage
@@ -115,5 +116,65 @@ class TrackingRepository {
               keyword.timestamp.month == month.month,
         )
         .toList();
+  }
+
+  // Callback when the foreground isolate sends a new tracked keyword
+  Future<void> _onTrackedKeywordReceived(TrackedKeyword keyword) async {
+    // Prevent duplicates: check if the keyword with the same timestamp already exists
+    // Although rare, it can happen on quick/hot restarts of the foreground service
+    // Foreground service may resend the last tracked keyword on restart
+    // This was observed during testing (running hot reload multiple times fast)
+    // TODO: should probably identify root cause, see if a big problem during normal usage
+    if (_cachedKeywords.any(
+      (ck) =>
+          ck.timestamp == keyword.timestamp && ck.keyword == keyword.keyword,
+    )) {
+      return;
+    }
+
+    // Persist the keyword into local storage and broadcast it through the stream to listeners
+    await _localStorage.addTrackedKeyword(keyword);
+    // Update cached keywords
+    _cachedKeywords.add(keyword);
+    // Update keywords by day map
+    final dayKey = DateTime(
+      keyword.timestamp.year,
+      keyword.timestamp.month,
+      keyword.timestamp.day,
+    );
+    _keywordsByDayMap.putIfAbsent(dayKey, () => []).add(keyword);
+    // Broadcast the new keyword
+    _controller.add(keyword);
+  }
+
+  // Group cached keywords by day
+  Map<DateTime, List<TrackedKeyword>> _groupKeywordsByDay(
+    List<TrackedKeyword> keywords,
+  ) {
+    final Map<DateTime, List<TrackedKeyword>> grouped = {};
+
+    for (final keyword in keywords) {
+      final day = DateTime(
+        keyword.timestamp.year,
+        keyword.timestamp.month,
+        keyword.timestamp.day,
+      );
+
+      grouped.putIfAbsent(day, () => []).add(keyword);
+    }
+
+    return grouped;
+  }
+
+  // Get map of most recent n days and their tracked keywords
+  Map<DateTime, List<TrackedKeyword>> getLastDaysKeywordsMap(int n) {
+    // See: https://stackoverflow.com/questions/65398100/how-can-i-grab-the-last-n-elements-in-a-mapint-dynamic
+
+    // First sort the entries by DateTime key, Map guarantees insertion order but we still need to sort
+    // in case entries were added out of order from DB when caching in init()
+    final sortedEntries = _keywordsByDayMap.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return Map.fromEntries(sortedEntries.reversed.take(n).toList().reversed);
   }
 }

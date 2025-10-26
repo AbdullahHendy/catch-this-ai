@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:catch_this_ai/app/home_page.dart';
 import 'package:catch_this_ai/features/daily_tracker/presentation/view_model/daily_tracker_view_model.dart';
+import 'package:catch_this_ai/features/stats/presentation/view_model/stats_view_model.dart';
 import 'package:catch_this_ai/core/theme/app_theme.dart';
 
 /// Main application widget
@@ -18,6 +19,7 @@ class MyApp extends StatelessWidget {
         // Circular progress indicator while waiting for DBManager init
         if (snapshot.connectionState != ConnectionState.done) {
           return const MaterialApp(
+            // TODO: maybe replace with a splash screen later
             home: Scaffold(body: Center(child: CircularProgressIndicator())),
           );
         }
@@ -30,6 +32,9 @@ class MyApp extends StatelessWidget {
             ChangeNotifierProvider<DailyTrackerViewModel>(
               create: (_) =>
                   DailyTrackerViewModel(deps.trackingRepository)..start(),
+            ),
+            ChangeNotifierProvider<StatsViewModel>(
+              create: (_) => StatsViewModel(deps.trackingRepository)..start(),
             ),
           ],
 
