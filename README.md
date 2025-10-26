@@ -20,11 +20,12 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Spotted keywords are published in a {String keyword, DateTime timestamp} and saved in the database
     * Home page keeps track of counts of keyword daily
     * Apps runns in the background
+    * Included Stats Page
 
 * **TODO**
     * Verify if the [current behavior](#current-behavior) is the desired one
     * UI/UX needs improvement
-    * Missing Stats and Settings page
+    * Missing Settings page
     * Look into offloading, everythign is currently in main thread
     * Add option to stop, other settings (Settings Page)
     * See TODOs in files
