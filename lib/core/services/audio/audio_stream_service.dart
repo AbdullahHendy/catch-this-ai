@@ -97,6 +97,7 @@ class AudioStreamService {
   Future<void> stop() async {
     if (_recordingState == RecordState.stop) return;
     await _audioRecorder.stop();
+    _isSubscribedToStateChanges = false;
   }
 
   // Dispose the service and release resources
