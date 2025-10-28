@@ -12,7 +12,7 @@ class AudioStreamService {
   // Broadcast stream to allow possible multiple listeners to subscribe
   final _audioController = StreamController<Float32List>.broadcast();
 
-  // Stream controller to send the pause state of RecordState to listeners
+  // Stream controller to send the recording state (RecordState) to listeners
   // Broadcast stream to allow possible multiple listeners to subscribe
   final _stateController = StreamController<RecordState>.broadcast();
 
