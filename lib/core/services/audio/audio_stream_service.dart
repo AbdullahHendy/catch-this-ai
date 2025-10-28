@@ -10,25 +10,35 @@ class AudioStreamService {
 
   // Stream controller to send Float32List audio data to listeners
   // Broadcast stream to allow possible multiple listeners to subscribe
-  final _controller = StreamController<Float32List>.broadcast();
+  final _audioController = StreamController<Float32List>.broadcast();
+
+  // Stream controller to send the pause state of RecordState to listeners
+  // Broadcast stream to allow possible multiple listeners to subscribe
+  final _stateController = StreamController<RecordState>.broadcast();
 
   // Subscription to monitor recording state changes from modules that use the recorder
   StreamSubscription<RecordState>? _recordSubscription;
 
-  // Flag to indicate if recording is in progress
-  bool _isRecording = false;
+  // Recording state
+  RecordState _recordingState = RecordState.stop;
 
   // Getter for the audio data (Float32List) stream to allow listeners to subscribe and do something like:
-  // audioStreamService.stream.listen((audioData) { ... });
+  // audioStreamService.audioStream.listen((audioData) { ... });
   // similar to what's done BELOW to get raw byte data from the recorder stream: recordStream.listen((data) { ... });
-  Stream<Float32List> get stream => _controller.stream;
+  Stream<Float32List> get audioStream => _audioController.stream;
 
-  // Getter for _isRecording flag
-  bool get isRecording => _isRecording;
+  // Similar getter for the recording state stream
+  Stream<RecordState> get stateStream => _stateController.stream;
+
+  // Getter for recording state
+  RecordState get recordingState => _recordingState;
+
+  // Flag to ensure we only subscribe once to the recorder state changes
+  bool _isSubscribedToStateChanges = false;
 
   // Start audio recording and streaming
   Future<void> start() async {
-    if (_isRecording) return;
+    if (_recordingState == RecordState.record) return;
 
     // NOTE: This service is expected to be started in a foreground service (different isolate) that has microphone permission already granted.
     // TODO: Maybe leave the code below uncommented with a `if(inMainIsolate)` check to
@@ -55,6 +65,17 @@ class AudioStreamService {
       numChannels: numChannels,
     );
 
+    // The first thing to do is to subscribe to state changes if not already done
+    // This will make sure all state changes are captured even if they happen before start() is awaited
+    if (!_isSubscribedToStateChanges) {
+      _recordSubscription = _audioRecorder.onStateChanged().listen((state) {
+        // Change state first before notifying listeners
+        _recordingState = state;
+        _stateController.add(_recordingState);
+      });
+      _isSubscribedToStateChanges = true;
+    }
+
     // Start recording and listen to the audio stream
     final recordStream = await _audioRecorder.startStream(recordConfig);
 
@@ -62,32 +83,29 @@ class AudioStreamService {
       final float32ListData = convertBytesToFloat32List(
         Uint8List.fromList(rawData),
       );
-      _controller.add(float32ListData);
-    }, onError: (e, st) => _controller.addError(e, st));
+      _audioController.add(float32ListData);
+    }, onError: (e, st) => _audioController.addError(e, st));
+  }
 
-    // Update recording state
-    _isRecording = true;
-
-    // Monitor recording state changes
-    _recordSubscription = _audioRecorder.onStateChanged().listen((state) {
-      if (state == RecordState.stop) {
-        _isRecording = false;
-      }
-    });
+  // Resume audio recording if paused
+  Future<void> resume() async {
+    if (_recordingState != RecordState.pause) return;
+    await _audioRecorder.resume();
   }
 
   // Stop audio recording and streaming
   Future<void> stop() async {
-    if (!_isRecording) return;
+    if (_recordingState == RecordState.stop) return;
     await _audioRecorder.stop();
-    _isRecording = false;
   }
 
   // Dispose the service and release resources
   Future<void> dispose() async {
     await stop();
     _recordSubscription?.cancel();
-    _controller.close();
+    _audioController.close();
+    _stateController.close();
     _audioRecorder.dispose();
+    _isSubscribedToStateChanges = false;
   }
 }
