@@ -5,6 +5,7 @@ import 'package:catch_this_ai/core/services/kws/sherpa_kws_service.dart';
 import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:record/record.dart';
 
 // Top-level callback function to handle tracked keywords in the foreground task
 @pragma('vm:entry-point')
@@ -22,6 +23,9 @@ class TrackerTaskHandler extends TaskHandler {
   StreamSubscription<Float32List>? _audioSub;
   StreamSubscription<String>? _kwsSub;
 
+  // Subscription to recording state changes to update notification accordingly
+  StreamSubscription<RecordState>? _recordingStateSub;
+
   // onStart is called when the foreground task starts
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -36,7 +40,7 @@ class TrackerTaskHandler extends TaskHandler {
     await _audioService.start();
 
     // Listen to audio stream and pass audio data to KWS service for keyword detection
-    _audioSub = _audioService.stream.listen((audioData) {
+    _audioSub = _audioService.audioStream.listen((audioData) {
       _kwsService.detectKeywords(audioData);
     });
 
@@ -47,8 +51,10 @@ class TrackerTaskHandler extends TaskHandler {
       FlutterForegroundTask.sendDataToMain(trackedKeyword.toMap());
     });
 
-    // Update the notification to reflect the tracking state
-    await _updateNotification();
+    // Listen to recording state changes to update notification accordingly
+    _recordingStateSub = _audioService.stateStream.listen((state) async {
+      await _updateNotification();
+    });
   }
 
   // onRepeatEvent is called on each interval defined in ForegroundTaskOptions
@@ -63,6 +69,7 @@ class TrackerTaskHandler extends TaskHandler {
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     await _audioSub?.cancel();
     await _kwsSub?.cancel();
+    await _recordingStateSub?.cancel();
     await _kwsService.dispose();
     await _audioService.dispose();
   }
@@ -79,15 +86,18 @@ class TrackerTaskHandler extends TaskHandler {
   Future<void> onNotificationButtonPressed(String id) async {
     switch (id) {
       case 'btn_start':
-        if (!_audioService.isRecording) {
+        if (_audioService.recordingState != RecordState.record) {
           await _audioService.start();
-          await _updateNotification();
+        }
+
+      case 'btn_resume':
+        if (_audioService.recordingState == RecordState.pause) {
+          await _audioService.resume();
         }
 
       case 'btn_stop':
-        if (_audioService.isRecording) {
+        if (_audioService.recordingState != RecordState.stop) {
           await _audioService.stop();
-          await _updateNotification();
         }
 
       case 'btn_exit':
@@ -115,19 +125,37 @@ class TrackerTaskHandler extends TaskHandler {
 
   // Helper method to update the service notification buttons and text based on the recording state
   Future<void> _updateNotification() async {
+    // Read the recording state from the audio service
+    final state = _audioService.recordingState;
+
+    String notificationText;
+    List<NotificationButton> buttons;
+
+    // Update notification text and buttons based on recording states (record, pause, stop)
+    switch (state) {
+      case RecordState.record:
+        notificationText = 'Catching...';
+        buttons = const [
+          NotificationButton(id: 'btn_stop', text: 'Stop'),
+          NotificationButton(id: 'btn_exit', text: 'Exit'),
+        ];
+      case RecordState.pause:
+        notificationText = 'Paused Catching...';
+        buttons = const [
+          NotificationButton(id: 'btn_resume', text: 'Resume'),
+          NotificationButton(id: 'btn_exit', text: 'Exit'),
+        ];
+      case RecordState.stop:
+        notificationText = 'Not Catching...';
+        buttons = const [
+          NotificationButton(id: 'btn_start', text: 'Start'),
+          NotificationButton(id: 'btn_exit', text: 'Exit'),
+        ];
+    }
+
     FlutterForegroundTask.updateService(
-      notificationText: _audioService.isRecording
-          ? 'Catching...'
-          : 'Not Catching...',
-      notificationButtons: _audioService.isRecording
-          ? const [
-              NotificationButton(id: 'btn_stop', text: 'Stop'),
-              NotificationButton(id: 'btn_exit', text: 'Exit'),
-            ]
-          : const [
-              NotificationButton(id: 'btn_start', text: 'Start'),
-              NotificationButton(id: 'btn_exit', text: 'Exit'),
-            ],
+      notificationText: notificationText,
+      notificationButtons: buttons,
     );
   }
 }
