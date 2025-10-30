@@ -16,12 +16,15 @@ class DBManager {
     await Hive.initFlutter();
 
     // Initialize all adapters
-    // Map of adapter IDs to their registration functions
-    final Map<int, TypeAdapter> adapterTypes = {0: TrackedKeywordAdapter()};
+    // Map of adapter IDs to their registerAdapter function calls
+    // This is done to avoid dynamic registration when doing registerAdapter() without explicitly specifying the adapter type
+    final Map<int, Function()> adaptersReg = {
+      0: () => Hive.registerAdapter<TrackedKeyword>(TrackedKeywordAdapter()),
+    };
 
-    for (var entry in adapterTypes.entries) {
+    for (var entry in adaptersReg.entries) {
       if (!Hive.isAdapterRegistered(entry.key)) {
-        Hive.registerAdapter(entry.value);
+        entry.value();
       }
     }
 
