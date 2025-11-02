@@ -283,8 +283,18 @@ class StatsViewModel extends ChangeNotifier {
 
   // Helpers for updating last7DaysKeywordsMap and last30DaysKeywordsMap
   void _updateLastDaysKeywordsMaps() {
-    _last7DaysKeywordsMap = _repo.getLastDaysKeywordsMap(7);
-    _last30DaysKeywordsMap = _repo.getLastDaysKeywordsMap(30);
+    // TODO: app wide option should determine whether to pad empty days or not, which should also affect the UI styling of the charts
+    final bool padEmptyDays = true;
+    _last7DaysKeywordsMap = _repo.getRecentDaysKeywordsMap(
+      _currentDay,
+      7,
+      padEmptyDays,
+    );
+    _last30DaysKeywordsMap = _repo.getRecentDaysKeywordsMap(
+      _currentDay,
+      30,
+      padEmptyDays,
+    );
   }
 
   void _updateLastDaysKeywordsCountsMaps() {
