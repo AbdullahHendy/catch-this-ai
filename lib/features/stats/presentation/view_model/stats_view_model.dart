@@ -158,8 +158,20 @@ class StatsViewModel extends ChangeNotifier {
     _percentChanges();
 
     // Update last 7 and 30 days keywords maps and counts maps
-    _updateLastDaysKeywordsMaps();
-    _updateLastDaysKeywordsCountsMaps();
+    // In _last7DaysKeywordsMap and _last30DaysKeywordsMap, replace the list for the day of the new keyword with the updated list (_dayKeywordHistory)
+    // For the first detected word of the day, the day entry might not exist yet in the maps,
+    // depending on whether padEmptyDays was used when loading the maps or not.
+    // Maps' keys are DateTime objects representing exact days (year, month, day) without time component.
+    final dayKey = DateTime(
+      trackedKeyword.timestamp.year,
+      trackedKeyword.timestamp.month,
+      trackedKeyword.timestamp.day,
+    );
+    _last7DaysKeywordsMap[dayKey] = List.from(_dayKeywordHistory);
+    _last30DaysKeywordsMap[dayKey] = List.from(_dayKeywordHistory);
+
+    _last7DaysCountsMap[dayKey] = _dayKeywordHistory.length;
+    _last30DaysCountsMap[dayKey] = _dayKeywordHistory.length;
 
     notifyListeners();
   }
@@ -282,12 +294,22 @@ class StatsViewModel extends ChangeNotifier {
   }
 
   // Helpers for updating last7DaysKeywordsMap and last30DaysKeywordsMap
-  void _updateLastDaysKeywordsMaps() {
-    _last7DaysKeywordsMap = _repo.getLastDaysKeywordsMap(7);
-    _last30DaysKeywordsMap = _repo.getLastDaysKeywordsMap(30);
+  void _loadRecentDaysKeywordsMaps() {
+    // TODO: app wide option should determine whether to pad empty days or not, which should also affect the UI styling of the charts
+    final bool padEmptyDays = true;
+    _last7DaysKeywordsMap = _repo.getRecentDaysKeywordsMap(
+      _currentDay,
+      7,
+      padEmptyDays,
+    );
+    _last30DaysKeywordsMap = _repo.getRecentDaysKeywordsMap(
+      _currentDay,
+      30,
+      padEmptyDays,
+    );
   }
 
-  void _updateLastDaysKeywordsCountsMaps() {
+  void _loadRecentDaysKeywordsCountsMaps() {
     _last7DaysCountsMap = _last7DaysKeywordsMap.map(
       (day, keywords) => MapEntry(day, keywords.length),
     );
@@ -302,24 +324,24 @@ class StatsViewModel extends ChangeNotifier {
     _loadDayHistory();
     _loadLastDayHistoryCount();
     _dayPercentChange();
-    _updateLastDaysKeywordsMaps();
-    _updateLastDaysKeywordsCountsMaps();
+    _loadRecentDaysKeywordsMaps();
+    _loadRecentDaysKeywordsCountsMaps();
   }
 
   void _onWeekChanged() {
     _loadWeekHistory();
     _loadLastWeekHistoryCount();
     _weekPercentChange();
-    _updateLastDaysKeywordsMaps();
-    _updateLastDaysKeywordsCountsMaps();
+    _loadRecentDaysKeywordsMaps();
+    _loadRecentDaysKeywordsCountsMaps();
   }
 
   void _onMonthChanged() {
     _loadMonthHistory();
     _loadLastMonthHistoryCount();
     _monthPercentChange();
-    _updateLastDaysKeywordsMaps();
-    _updateLastDaysKeywordsCountsMaps();
+    _loadRecentDaysKeywordsMaps();
+    _loadRecentDaysKeywordsCountsMaps();
   }
 
   // Helper to initialize all states
@@ -332,8 +354,8 @@ class StatsViewModel extends ChangeNotifier {
     _percentChanges();
 
     // Load last 7 and 30 days keywords maps and count maps for charts
-    _updateLastDaysKeywordsMaps();
-    _updateLastDaysKeywordsCountsMaps();
+    _loadRecentDaysKeywordsMaps();
+    _loadRecentDaysKeywordsCountsMaps();
   }
 
   // Chart-related functions

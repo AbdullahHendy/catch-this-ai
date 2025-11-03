@@ -58,7 +58,12 @@ class StatsChartContainer extends StatelessWidget {
           const SizedBox(height: 8),
 
           // bar chart placeholder
-          const Expanded(child: StatsChart()),
+          const Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: 24),
+              child: StatsChart(),
+            ),
+          ),
         ],
       ),
     );

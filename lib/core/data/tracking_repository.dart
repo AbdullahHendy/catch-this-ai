@@ -172,15 +172,55 @@ class TrackingRepository {
     return grouped;
   }
 
-  // Get map of most recent n days and their tracked keywords
-  Map<DateTime, List<TrackedKeyword>> getLastDaysKeywordsMap(int n) {
+  // Get map of most recent n days and their tracked keywords starting from a reference day
+  // Padding option to fill with empty lists for days with no keywords
+  // Without padding, function returns recent n days that have keywords only (not necessarily the actual last n days)
+  Map<DateTime, List<TrackedKeyword>> getRecentDaysKeywordsMap(
+    DateTime referenceDay,
+    int n,
+    bool padEmptyDays,
+  ) {
     // See: https://stackoverflow.com/questions/65398100/how-can-i-grab-the-last-n-elements-in-a-mapint-dynamic
 
-    // First sort the entries by DateTime key, Map guarantees insertion order but we still need to sort
-    // in case entries were added out of order from DB when caching in init()
-    final sortedEntries = _keywordsByDayMap.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
+    // Get day
+    final refDayKey = DateTime(
+      referenceDay.year,
+      referenceDay.month,
+      referenceDay.day,
+    );
 
-    return Map.fromEntries(sortedEntries.reversed.take(n).toList().reversed);
+    // Get all entries from the map that are on or before the reference day
+    final filteredEntries = _keywordsByDayMap.entries
+        .where((entry) => !entry.key.isAfter(refDayKey))
+        .toList();
+
+    // Sort the entries by DateTime key
+    filteredEntries.sort((a, b) => a.key.compareTo(b.key));
+
+    // Take the last n entries
+    final result = Map.fromEntries(
+      filteredEntries.reversed.take(n).toList().reversed,
+    );
+
+    if (padEmptyDays) {
+      // Get a list of the expected n days ending at reference day
+      final expectedDays = List<DateTime>.generate(
+        n,
+        (i) => refDayKey.subtract(Duration(days: n - 1 - i)),
+      );
+
+      // Ensure all expected days are present in the result map
+      for (var day in expectedDays) {
+        result.putIfAbsent(day, () => []);
+      }
+
+      // Ensure the result map is sorted by DateTime key after padding
+      final sortedKeys = result.keys.toList()..sort();
+      return Map.fromEntries(
+        sortedKeys.map((key) => MapEntry(key, result[key]!)),
+      );
+    }
+
+    return result;
   }
 }
