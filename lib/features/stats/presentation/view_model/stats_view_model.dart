@@ -167,8 +167,8 @@ class StatsViewModel extends ChangeNotifier {
       trackedKeyword.timestamp.month,
       trackedKeyword.timestamp.day,
     );
-    _last7DaysKeywordsMap[dayKey] = _dayKeywordHistory;
-    _last30DaysKeywordsMap[dayKey] = _dayKeywordHistory;
+    _last7DaysKeywordsMap[dayKey] = List.from(_dayKeywordHistory);
+    _last30DaysKeywordsMap[dayKey] = List.from(_dayKeywordHistory);
 
     _last7DaysCountsMap[dayKey] = _dayKeywordHistory.length;
     _last30DaysCountsMap[dayKey] = _dayKeywordHistory.length;
