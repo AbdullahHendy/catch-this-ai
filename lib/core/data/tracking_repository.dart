@@ -203,7 +203,7 @@ class TrackingRepository {
     );
 
     if (padEmptyDays) {
-      // Get a list of of the expected n days ending at reference day
+      // Get a list of the expected n days ending at reference day
       final expectedDays = List<DateTime>.generate(
         n,
         (i) => refDayKey.subtract(Duration(days: n - 1 - i)),
