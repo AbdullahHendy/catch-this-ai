@@ -1,5 +1,3 @@
-// lib/features/stats/widgets/stats_chart.dart
-
 import 'package:catch_this_ai/features/stats/widgets/stats_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +10,7 @@ class StatsChartContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final statsState = context.watch<StatsViewModel>();
     final timeFrames = statsState.chartTimeFrames;
-    final chartTimeFrameIndex = statsState.chartTimeFrameIndex;
+    final chartTimeFrame = statsState.selectedChartTimeFrame;
 
     return Container(
       height: 251,
@@ -38,16 +36,16 @@ class StatsChartContainer extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: ChoiceChip(
                   label: Text(
-                    timeFrames[index],
+                    timeFrames[index].label,
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  selected: chartTimeFrameIndex == index,
+                  selected: chartTimeFrame == timeFrames[index],
                   onSelected: (bool selected) {
-                    if (selected && chartTimeFrameIndex != index) {
-                      statsState.setChartTimeFrameIndex(index);
+                    if (selected && chartTimeFrame != timeFrames[index]) {
+                      statsState.setChartTimeFrame(timeFrames[index]);
                     }
                   },
                 ),

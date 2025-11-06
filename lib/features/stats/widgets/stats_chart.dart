@@ -69,9 +69,9 @@ class StatsChart extends StatelessWidget {
       _ => '',
     };
 
-    // If 30d view (implied by data size > 20), show labels with stride of 3 days
+    // If 30d view show labels with stride of 3 days
     const int daysBetweenLabels = 3;
-    if (statsState.selectedDaysCountsMap.length > 20) {
+    if (statsState.selectedChartTimeFrame == ChartTimeFrame.month) {
       if (weekday == dayToShow) {
         // Update dayToShow to be 3 days later, wrapping around the week
         dayToShow += daysBetweenLabels;
@@ -119,10 +119,10 @@ class StatsChart extends StatelessWidget {
       ),
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
-          // only for 30d view (implied by data size > 20), show left titles
-          showTitles: statsState.selectedDaysCountsMap.length > 20,
+          // only for 30d view show left titles
+          showTitles: statsState.selectedChartTimeFrame == ChartTimeFrame.month,
           reservedSize: 40,
-          interval: statsState.chartMaxY / 3,
+          interval: statsState.chartMaxY > 0 ? statsState.chartMaxY / 3 : 1,
           getTitlesWidget: getLeftTitles,
         ),
       ),
@@ -157,10 +157,9 @@ class StatsChart extends StatelessWidget {
             gradient: _barsGradient(context),
           ),
         ],
-        // Only show tooltip for small maps
-        showingTooltipIndicators: statsState.selectedDaysCountsMap.length <= 20
-            ? [0]
-            : [],
+        // Only show tooltip for 7d view
+        showingTooltipIndicators:
+            statsState.selectedChartTimeFrame == ChartTimeFrame.week ? [0] : [],
       );
     }).toList();
   }

@@ -40,8 +40,8 @@ class DailyTrackerViewModel extends ChangeNotifier {
     notifyListeners();
 
     // Subscribe to the tracked keywords stream
-    _sub = _repo.stream.listen((trackedKeyword) {
-      _onTrackedKeywordReceived(trackedKeyword);
+    _sub = _repo.stream.listen((trackedKeywordUTC) {
+      _onTrackedKeywordReceived(trackedKeywordUTC);
     });
 
     // Timer to check for day changes every minute
@@ -77,14 +77,22 @@ class DailyTrackerViewModel extends ChangeNotifier {
   }
 
   // Callback when a tracked keyword is received from the foreground task
-  Future<void> _onTrackedKeywordReceived(TrackedKeyword trackedKeyword) async {
+  Future<void> _onTrackedKeywordReceived(
+    TrackedKeyword trackedKeywordUTC,
+  ) async {
     final now = DateTime.now();
     // Guard for the case when first keyword of the day is detected before the timer resets the day
     if (!isSameDay(now, _currentDay)) {
       _loadTodayHistory();
     }
 
-    _dayKeywordHistory.insert(0, trackedKeyword);
+    // Create a local tracked keyword for history list
+    final trackedKeywordLocal = TrackedKeyword(
+      trackedKeywordUTC.keyword,
+      trackedKeywordUTC.timestamp.toLocal(),
+    );
+
+    _dayKeywordHistory.insert(0, trackedKeywordLocal);
     final animatedList = historyListKey?.currentState as AnimatedListState?;
     animatedList?.insertItem(0);
     _totalDayCount++;
@@ -95,7 +103,7 @@ class DailyTrackerViewModel extends ChangeNotifier {
   // Helper to load today's history
   void _loadTodayHistory() {
     final today = DateTime.now();
-    final todayHistory = _repo.getDayKeywords(today);
+    final todayHistory = _repo.getLocalDayKeywords(today);
 
     // Clear and reload the day's history with animation
     _dayKeywordHistory.clear();

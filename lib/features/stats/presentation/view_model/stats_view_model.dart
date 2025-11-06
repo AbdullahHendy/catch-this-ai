@@ -4,6 +4,32 @@ import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
 import 'package:flutter/material.dart';
 import 'package:catch_this_ai/core/utils/time_utils.dart';
 
+// Enum for chart time frames
+enum ChartTimeFrame {
+  week, // 7d view
+  month, // 30d view
+}
+
+extension ChartTimeFrameExtension on ChartTimeFrame {
+  int get days {
+    switch (this) {
+      case ChartTimeFrame.week:
+        return 7;
+      case ChartTimeFrame.month:
+        return 30;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case ChartTimeFrame.week:
+        return '7d';
+      case ChartTimeFrame.month:
+        return '30d';
+    }
+  }
+}
+
 /// ViewModel to manage stats state and data
 class StatsViewModel extends ChangeNotifier {
   // instance of data broker/repository
@@ -34,8 +60,7 @@ class StatsViewModel extends ChangeNotifier {
   int _weekChangePercentage = 0;
   int _monthChangePercentage = 0;
 
-  int _chartTimeFrameIndex = 0;
-  final List<String> _chartTimeFrames = ['7d', '30d'];
+  ChartTimeFrame _selectedChartTimeFrame = ChartTimeFrame.week;
 
   Map<DateTime, List<TrackedKeyword>> _last7DaysKeywordsMap = {};
   Map<DateTime, List<TrackedKeyword>> _last30DaysKeywordsMap = {};
@@ -57,8 +82,8 @@ class StatsViewModel extends ChangeNotifier {
   int get weekChangePercentage => _weekChangePercentage;
   int get monthChangePercentage => _monthChangePercentage;
 
-  int get chartTimeFrameIndex => _chartTimeFrameIndex;
-  List<String> get chartTimeFrames => _chartTimeFrames;
+  ChartTimeFrame get selectedChartTimeFrame => _selectedChartTimeFrame;
+  List<ChartTimeFrame> get chartTimeFrames => ChartTimeFrame.values;
 
   Map<DateTime, List<TrackedKeyword>> get last7DaysKeywordsMap =>
       _last7DaysKeywordsMap;
@@ -82,8 +107,8 @@ class StatsViewModel extends ChangeNotifier {
     notifyListeners();
 
     // Subscribe to the tracked keywords stream
-    _sub = _repo.stream.listen((trackedKeyword) {
-      _onTrackedKeywordReceived(trackedKeyword);
+    _sub = _repo.stream.listen((trackedKeywordUTC) {
+      _onTrackedKeywordReceived(trackedKeywordUTC);
     });
 
     // Timer to check for changes every minute
@@ -129,7 +154,9 @@ class StatsViewModel extends ChangeNotifier {
   }
 
   // Callback when a tracked keyword is received from the foreground task
-  Future<void> _onTrackedKeywordReceived(TrackedKeyword trackedKeyword) async {
+  Future<void> _onTrackedKeywordReceived(
+    TrackedKeyword trackedKeywordUTC,
+  ) async {
     final now = DateTime.now();
     // Guard for the cases when first keyword of the day/week/month is detected
     // before the timer resets the day/week/month.
@@ -147,9 +174,14 @@ class StatsViewModel extends ChangeNotifier {
       _onMonthChanged();
     }
 
-    _dayKeywordHistory.insert(0, trackedKeyword);
-    _weekKeywordHistory.insert(0, trackedKeyword);
-    _monthKeywordHistory.insert(0, trackedKeyword);
+    // Create a local tracked keyword for history lists
+    final trackedKeywordLocal = TrackedKeyword(
+      trackedKeywordUTC.keyword,
+      trackedKeywordUTC.timestamp.toLocal(),
+    );
+    _dayKeywordHistory.insert(0, trackedKeywordLocal);
+    _weekKeywordHistory.insert(0, trackedKeywordLocal);
+    _monthKeywordHistory.insert(0, trackedKeywordLocal);
     _totalDayCount++;
     _totalWeekCount++;
     _totalMonthCount++;
@@ -162,10 +194,12 @@ class StatsViewModel extends ChangeNotifier {
     // For the first detected word of the day, the day entry might not exist yet in the maps,
     // depending on whether padEmptyDays was used when loading the maps or not.
     // Maps' keys are DateTime objects representing exact days (year, month, day) without time component.
+
+    // _lastXDaysKeywordsMap is grouped by local day keys
     final dayKey = DateTime(
-      trackedKeyword.timestamp.year,
-      trackedKeyword.timestamp.month,
-      trackedKeyword.timestamp.day,
+      trackedKeywordLocal.timestamp.year,
+      trackedKeywordLocal.timestamp.month,
+      trackedKeywordLocal.timestamp.day,
     );
     _last7DaysKeywordsMap[dayKey] = List.from(_dayKeywordHistory);
     _last30DaysKeywordsMap[dayKey] = List.from(_dayKeywordHistory);
@@ -179,7 +213,7 @@ class StatsViewModel extends ChangeNotifier {
   // Helpers to load history
   void _loadDayHistory() {
     final today = DateTime.now();
-    final todayHistory = _repo.getDayKeywords(today);
+    final todayHistory = _repo.getLocalDayKeywords(today);
 
     // Clear and reload the day's history
     _dayKeywordHistory
@@ -192,7 +226,7 @@ class StatsViewModel extends ChangeNotifier {
 
   void _loadWeekHistory() {
     final today = DateTime.now();
-    final weekHistory = _repo.getWeekKeywords(today);
+    final weekHistory = _repo.getLocalWeekKeywords(today);
 
     // Clear and reload the week's history
     _weekKeywordHistory
@@ -205,7 +239,7 @@ class StatsViewModel extends ChangeNotifier {
 
   void _loadMonthHistory() {
     final today = DateTime.now();
-    final monthHistory = _repo.getMonthKeywords(today);
+    final monthHistory = _repo.getLocalMonthKeywords(today);
 
     // Clear and reload the month's history
     _monthKeywordHistory
@@ -225,14 +259,14 @@ class StatsViewModel extends ChangeNotifier {
   // Helper to load last period histories counts
   void _loadLastDayHistoryCount() {
     final yesterday = _currentDay.subtract(const Duration(days: 1));
-    final yesterdayHistory = _repo.getDayKeywords(yesterday);
+    final yesterdayHistory = _repo.getLocalDayKeywords(yesterday);
 
     _totalLastDayCount = yesterdayHistory.length;
   }
 
   void _loadLastWeekHistoryCount() {
     final lastWeekDay = _currentWeek.subtract(const Duration(days: 7));
-    final lastWeekHistory = _repo.getWeekKeywords(lastWeekDay);
+    final lastWeekHistory = _repo.getLocalWeekKeywords(lastWeekDay);
 
     _totalLastWeekCount = lastWeekHistory.length;
   }
@@ -243,7 +277,7 @@ class StatsViewModel extends ChangeNotifier {
         ? DateTime(_currentMonth.year - 1, DateTime.december)
         : DateTime(_currentMonth.year, _currentMonth.month - 1);
 
-    final lastMonthHistory = _repo.getMonthKeywords(lastMonth);
+    final lastMonthHistory = _repo.getLocalMonthKeywords(lastMonth);
 
     _totalLastMonthCount = lastMonthHistory.length;
   }
@@ -297,12 +331,12 @@ class StatsViewModel extends ChangeNotifier {
   void _loadRecentDaysKeywordsMaps() {
     // TODO: app wide option should determine whether to pad empty days or not, which should also affect the UI styling of the charts
     final bool padEmptyDays = true;
-    _last7DaysKeywordsMap = _repo.getRecentDaysKeywordsMap(
+    _last7DaysKeywordsMap = _repo.getRecentLocalDaysKeywordsMap(
       _currentDay,
       7,
       padEmptyDays,
     );
-    _last30DaysKeywordsMap = _repo.getRecentDaysKeywordsMap(
+    _last30DaysKeywordsMap = _repo.getRecentLocalDaysKeywordsMap(
       _currentDay,
       30,
       padEmptyDays,
@@ -359,16 +393,22 @@ class StatsViewModel extends ChangeNotifier {
   }
 
   // Chart-related functions
-  // Set the chart time frame index (0 for 7d, 1 for 30d)
-  void setChartTimeFrameIndex(int index) {
-    if (index == _chartTimeFrameIndex) return;
-    _chartTimeFrameIndex = index;
+  // Set the chart time frame
+  void setChartTimeFrame(ChartTimeFrame timeframe) {
+    if (timeframe == _selectedChartTimeFrame) return;
+    _selectedChartTimeFrame = timeframe;
     notifyListeners();
   }
 
   // Returns the selected days counts map based on the current chart time frame index
-  Map<DateTime, int> get selectedDaysCountsMap =>
-      _chartTimeFrameIndex == 0 ? _last7DaysCountsMap : _last30DaysCountsMap;
+  Map<DateTime, int> get selectedDaysCountsMap {
+    switch (_selectedChartTimeFrame) {
+      case ChartTimeFrame.week:
+        return _last7DaysCountsMap;
+      case ChartTimeFrame.month:
+        return _last30DaysCountsMap;
+    }
+  }
 
   // Returns the maximum Y value for the chart
   double get chartMaxY {
