@@ -4,6 +4,32 @@ import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
 import 'package:flutter/material.dart';
 import 'package:catch_this_ai/core/utils/time_utils.dart';
 
+// Enum for chart time frames
+enum ChartTimeFrame {
+  week, // 7d view
+  month, // 30d view
+}
+
+extension ChartTimeFrameExtension on ChartTimeFrame {
+  int get days {
+    switch (this) {
+      case ChartTimeFrame.week:
+        return 7;
+      case ChartTimeFrame.month:
+        return 30;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case ChartTimeFrame.week:
+        return '7d';
+      case ChartTimeFrame.month:
+        return '30d';
+    }
+  }
+}
+
 /// ViewModel to manage stats state and data
 class StatsViewModel extends ChangeNotifier {
   // instance of data broker/repository
@@ -34,8 +60,7 @@ class StatsViewModel extends ChangeNotifier {
   int _weekChangePercentage = 0;
   int _monthChangePercentage = 0;
 
-  int _chartTimeFrameIndex = 0;
-  final List<String> _chartTimeFrames = ['7d', '30d'];
+  ChartTimeFrame _selectedChartTimeFrame = ChartTimeFrame.week;
 
   Map<DateTime, List<TrackedKeyword>> _last7DaysKeywordsMap = {};
   Map<DateTime, List<TrackedKeyword>> _last30DaysKeywordsMap = {};
@@ -57,8 +82,8 @@ class StatsViewModel extends ChangeNotifier {
   int get weekChangePercentage => _weekChangePercentage;
   int get monthChangePercentage => _monthChangePercentage;
 
-  int get chartTimeFrameIndex => _chartTimeFrameIndex;
-  List<String> get chartTimeFrames => _chartTimeFrames;
+  ChartTimeFrame get selectedChartTimeFrame => _selectedChartTimeFrame;
+  List<ChartTimeFrame> get chartTimeFrames => ChartTimeFrame.values;
 
   Map<DateTime, List<TrackedKeyword>> get last7DaysKeywordsMap =>
       _last7DaysKeywordsMap;
@@ -368,16 +393,22 @@ class StatsViewModel extends ChangeNotifier {
   }
 
   // Chart-related functions
-  // Set the chart time frame index (0 for 7d, 1 for 30d)
-  void setChartTimeFrameIndex(int index) {
-    if (index == _chartTimeFrameIndex) return;
-    _chartTimeFrameIndex = index;
+  // Set the chart time frame
+  void setChartTimeFrame(ChartTimeFrame timeframe) {
+    if (timeframe == _selectedChartTimeFrame) return;
+    _selectedChartTimeFrame = timeframe;
     notifyListeners();
   }
 
   // Returns the selected days counts map based on the current chart time frame index
-  Map<DateTime, int> get selectedDaysCountsMap =>
-      _chartTimeFrameIndex == 0 ? _last7DaysCountsMap : _last30DaysCountsMap;
+  Map<DateTime, int> get selectedDaysCountsMap {
+    switch (_selectedChartTimeFrame) {
+      case ChartTimeFrame.week:
+        return _last7DaysCountsMap;
+      case ChartTimeFrame.month:
+        return _last30DaysCountsMap;
+    }
+  }
 
   // Returns the maximum Y value for the chart
   double get chartMaxY {
