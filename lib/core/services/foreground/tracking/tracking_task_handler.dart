@@ -46,7 +46,9 @@ class TrackerTaskHandler extends TaskHandler {
 
     // Listen to detected keywords from KWS service and send them through the controller
     _kwsSub = _kwsService.stream.listen((keyword) {
-      final trackedKeyword = TrackedKeyword(keyword, DateTime.now());
+      // TODO: HERE instead of trackedKeyword, there should be a wrapper that keeps the whole sentence in the case of OnlineRecognizer (sentence with possible multiple keywords)
+      // Create TrackedKeyword with current timestamp in UTC
+      final trackedKeyword = TrackedKeyword(keyword, DateTime.now().toUtc());
       // Send the tracked keyword to the main isolate
       FlutterForegroundTask.sendDataToMain(trackedKeyword.toMap());
     });

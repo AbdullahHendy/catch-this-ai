@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
 import 'package:catch_this_ai/core/services/foreground/tracking/tracking_service.dart';
 import 'package:catch_this_ai/core/storage/db/tracking_local_storage.dart';
@@ -26,7 +27,7 @@ class TrackingRepository {
 
   // Map of DateTime to List<TrackedKeyword> to group keywords by day/week/month
   // This is useful when dealing with running window of time periods
-  Map<DateTime, List<TrackedKeyword>> _keywordsByDayMap = {};
+  Map<DateTime, List<TrackedKeyword>> _keywordsByLocalDayMap = {};
 
   bool _isInitialized = false;
 
@@ -53,7 +54,7 @@ class TrackingRepository {
     _cachedKeywords = _localStorage.getAllTrackedKeywords();
 
     // Group cached keywords by day for easier querying later
-    _keywordsByDayMap = _groupKeywordsByDay(_cachedKeywords);
+    _keywordsByLocalDayMap = _groupKeywordsByLocalDay(_cachedKeywords);
 
     _isInitialized = true;
   }
@@ -73,32 +74,50 @@ class TrackingRepository {
     await _trackingService.dispose();
     await _controller.close();
     _cachedKeywords.clear();
-    _keywordsByDayMap.clear();
+    _keywordsByLocalDayMap.clear();
     _isInitialized = false;
   }
 
-  // Query cached keywords for a specific day from local storage
-  List<TrackedKeyword> getDayKeywords(DateTime day) {
+  // Query cached keywords (UTC) for a specific day (Local) from local storage
+  List<TrackedKeyword> getLocalDayKeywords(DateTime localDay) {
+    final startOfDayLocal = DateTime(
+      localDay.year,
+      localDay.month,
+      localDay.day,
+    );
+    final startOfNextDayLocal = startOfDayLocal.add(const Duration(days: 1));
+    final startOfDay = startOfDayLocal.toUtc();
+    final startOfNextDay = startOfNextDayLocal.toUtc();
+
     return _cachedKeywords
         .where(
           (keyword) =>
-              keyword.timestamp.year == day.year &&
-              keyword.timestamp.month == day.month &&
-              keyword.timestamp.day == day.day,
+              // Not before start of day to make it inclusive
+              !keyword.timestamp.isBefore(startOfDay) &&
+              // Before the next day to make it exclusive of the next day
+              keyword.timestamp.isBefore(startOfNextDay),
         )
         .toList();
   }
 
-  // Query cached keywords for a specific week from local storage
+  // Query cached keywords (UTC) for a specific week (Local) from local storage
   // Week is considered to start from Monday to Sunday
-  List<TrackedKeyword> getWeekKeywords(DateTime day) {
+  List<TrackedKeyword> getLocalWeekKeywords(DateTime localDay) {
     // Get start of the day to exactly find the beginning of the week
-    final startOfDay = DateTime(day.year, day.month, day.day);
-
-    final startOfWeek = startOfDay.subtract(
-      Duration(days: startOfDay.weekday - DateTime.monday),
+    final startOfDayLocal = DateTime(
+      localDay.year,
+      localDay.month,
+      localDay.day,
     );
-    final endOfWeek = startOfWeek.add(const Duration(days: 7)); // Next Monday
+
+    final startOfWeekLocal = startOfDayLocal.subtract(
+      Duration(days: startOfDayLocal.weekday - DateTime.monday),
+    );
+    final startOfNextWeekLocal = startOfWeekLocal.add(
+      const Duration(days: 7),
+    ); // Next Monday
+    final startOfWeek = startOfWeekLocal.toUtc();
+    final startOfNextWeek = startOfNextWeekLocal.toUtc();
 
     final weekKeywords = _cachedKeywords
         .where(
@@ -106,26 +125,34 @@ class TrackingRepository {
               // Not before start of week to make it inclusive
               !keyword.timestamp.isBefore(startOfWeek) &&
               // Before the next monday to make it inclusive of the last day (sunday)
-              keyword.timestamp.isBefore(endOfWeek),
+              keyword.timestamp.isBefore(startOfNextWeek),
         )
         .toList();
 
     return weekKeywords;
   }
 
-  // Query cached keywords for a specific month from local storage
-  List<TrackedKeyword> getMonthKeywords(DateTime month) {
+  // Query cached keywords (UTC) for a specific month (Local) from local storage
+  List<TrackedKeyword> getLocalMonthKeywords(DateTime localMonth) {
+    final startOfMonthLocal = DateTime(localMonth.year, localMonth.month, 1);
+    // Account for year change
+    final startOfNextMonthLocal = (localMonth.month == 12)
+        ? DateTime(localMonth.year + 1, 1, 1)
+        : DateTime(localMonth.year, localMonth.month + 1, 1);
+
+    final startOfMonth = startOfMonthLocal.toUtc();
+    final startOfNextMonth = startOfNextMonthLocal.toUtc();
     return _cachedKeywords
         .where(
           (keyword) =>
-              keyword.timestamp.year == month.year &&
-              keyword.timestamp.month == month.month,
+              !keyword.timestamp.isBefore(startOfMonth) &&
+              keyword.timestamp.isBefore(startOfNextMonth),
         )
         .toList();
   }
 
-  // Callback when the foreground isolate sends a new tracked keyword
-  Future<void> _onTrackedKeywordReceived(TrackedKeyword keyword) async {
+  // Callback when the foreground isolate sends a new tracked keyword (in UTC)
+  Future<void> _onTrackedKeywordReceived(TrackedKeyword keywordUTC) async {
     // Prevent duplicates: check if the keyword with the same timestamp already exists
     // Although rare, it can happen on quick/hot restarts of the foreground service
     // Foreground service may resend the last tracked keyword on restart
@@ -133,65 +160,71 @@ class TrackingRepository {
     // TODO: should probably identify root cause, see if a big problem during normal usage
     if (_cachedKeywords.any(
       (ck) =>
-          ck.timestamp == keyword.timestamp && ck.keyword == keyword.keyword,
+          ck.timestamp == keywordUTC.timestamp &&
+          ck.keyword == keywordUTC.keyword,
     )) {
       return;
     }
 
     // Persist the keyword into local storage and broadcast it through the stream to listeners
-    await _localStorage.addTrackedKeyword(keyword);
+    await _localStorage.addTrackedKeyword(keywordUTC);
+
     // Update cached keywords
-    _cachedKeywords.add(keyword);
-    // Update keywords by day map
-    final dayKey = DateTime(
-      keyword.timestamp.year,
-      keyword.timestamp.month,
-      keyword.timestamp.day,
+    _cachedKeywords.add(keywordUTC);
+
+    // Update keywords by local day map
+    final localTimestamp = keywordUTC.timestamp.toLocal();
+    final localDayKey = DateTime(
+      localTimestamp.year,
+      localTimestamp.month,
+      localTimestamp.day,
     );
-    _keywordsByDayMap.putIfAbsent(dayKey, () => []).add(keyword);
+    _keywordsByLocalDayMap.putIfAbsent(localDayKey, () => []).add(keywordUTC);
+
     // Broadcast the new keyword
-    _controller.add(keyword);
+    _controller.add(keywordUTC);
   }
 
   // Group cached keywords by day
-  Map<DateTime, List<TrackedKeyword>> _groupKeywordsByDay(
-    List<TrackedKeyword> keywords,
+  Map<DateTime, List<TrackedKeyword>> _groupKeywordsByLocalDay(
+    List<TrackedKeyword> keywordsUTC,
   ) {
-    final Map<DateTime, List<TrackedKeyword>> grouped = {};
+    final Map<DateTime, List<TrackedKeyword>> groupedLocal = {};
 
-    for (final keyword in keywords) {
-      final day = DateTime(
-        keyword.timestamp.year,
-        keyword.timestamp.month,
-        keyword.timestamp.day,
+    for (final keyword in keywordsUTC) {
+      final localTimestamp = keyword.timestamp.toLocal();
+      final localDay = DateTime(
+        localTimestamp.year,
+        localTimestamp.month,
+        localTimestamp.day,
       );
 
-      grouped.putIfAbsent(day, () => []).add(keyword);
+      groupedLocal.putIfAbsent(localDay, () => []).add(keyword);
     }
 
-    return grouped;
+    return groupedLocal;
   }
 
-  // Get map of most recent n days and their tracked keywords starting from a reference day
+  // Get map of most recent local n days and their tracked keywords starting from a local reference day
   // Padding option to fill with empty lists for days with no keywords
   // Without padding, function returns recent n days that have keywords only (not necessarily the actual last n days)
-  Map<DateTime, List<TrackedKeyword>> getRecentDaysKeywordsMap(
-    DateTime referenceDay,
+  Map<DateTime, List<TrackedKeyword>> getRecentLocalDaysKeywordsMap(
+    DateTime referenceLocalDay,
     int n,
     bool padEmptyDays,
   ) {
     // See: https://stackoverflow.com/questions/65398100/how-can-i-grab-the-last-n-elements-in-a-mapint-dynamic
 
     // Get day
-    final refDayKey = DateTime(
-      referenceDay.year,
-      referenceDay.month,
-      referenceDay.day,
+    final refLocalDayKey = DateTime(
+      referenceLocalDay.year,
+      referenceLocalDay.month,
+      referenceLocalDay.day,
     );
 
     // Get all entries from the map that are on or before the reference day
-    final filteredEntries = _keywordsByDayMap.entries
-        .where((entry) => !entry.key.isAfter(refDayKey))
+    final filteredEntries = _keywordsByLocalDayMap.entries
+        .where((entry) => !entry.key.isAfter(refLocalDayKey))
         .toList();
 
     // Sort the entries by DateTime key
@@ -206,7 +239,7 @@ class TrackingRepository {
       // Get a list of the expected n days ending at reference day
       final expectedDays = List<DateTime>.generate(
         n,
-        (i) => refDayKey.subtract(Duration(days: n - 1 - i)),
+        (i) => refLocalDayKey.subtract(Duration(days: n - 1 - i)),
       );
 
       // Ensure all expected days are present in the result map
@@ -216,9 +249,17 @@ class TrackingRepository {
 
       // Ensure the result map is sorted by DateTime key after padding
       final sortedKeys = result.keys.toList()..sort();
-      return Map.fromEntries(
+      final paddedResult = Map.fromEntries(
         sortedKeys.map((key) => MapEntry(key, result[key]!)),
       );
+      // Print debug info
+      for (var entry in paddedResult.entries) {
+        log(
+          'Day: ${entry.key.toIso8601String().split("T").first}, '
+          'Count: ${entry.value.length}',
+        );
+      }
+      return paddedResult;
     }
 
     return result;
