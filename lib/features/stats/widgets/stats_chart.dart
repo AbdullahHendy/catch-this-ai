@@ -122,7 +122,7 @@ class StatsChart extends StatelessWidget {
           // only for 30d view (implied by data size > 20), show left titles
           showTitles: statsState.selectedDaysCountsMap.length > 20,
           reservedSize: 40,
-          interval: statsState.chartMaxY / 3,
+          interval: statsState.chartMaxY > 0 ? statsState.chartMaxY / 3 : 1,
           getTitlesWidget: getLeftTitles,
         ),
       ),
