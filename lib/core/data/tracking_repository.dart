@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
 import 'package:catch_this_ai/core/services/foreground/tracking/tracking_service.dart';
 import 'package:catch_this_ai/core/storage/db/tracking_local_storage.dart';
@@ -252,13 +251,6 @@ class TrackingRepository {
       final paddedResult = Map.fromEntries(
         sortedKeys.map((key) => MapEntry(key, result[key]!)),
       );
-      // Print debug info
-      for (var entry in paddedResult.entries) {
-        log(
-          'Day: ${entry.key.toIso8601String().split("T").first}, '
-          'Count: ${entry.value.length}',
-        );
-      }
       return paddedResult;
     }
 
