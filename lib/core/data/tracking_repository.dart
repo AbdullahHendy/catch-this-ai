@@ -49,7 +49,7 @@ class TrackingRepository {
     // Register callback for tracked keywords from foreground service
     _trackingService.registerTrackedKeywordCallback(_onTrackedKeywordReceived);
 
-    // Load keywords from local storage into cache
+    // Load keywords from local storage into cache (UTC)
     _cachedKeywords = _localStorage.getAllTrackedKeywords();
 
     // Group cached keywords by day for easier querying later
@@ -76,6 +76,9 @@ class TrackingRepository {
     _keywordsByLocalDayMap.clear();
     _isInitialized = false;
   }
+
+  // All getLocalXKeywords method return a list of TrackedKeyword objects within the requested local time period,
+  // but the keyword timestamps are still in UTC for consistency.
 
   // Query cached keywords (UTC) for a specific day (Local) from local storage
   List<TrackedKeyword> getLocalDayKeywords(DateTime localDay) {

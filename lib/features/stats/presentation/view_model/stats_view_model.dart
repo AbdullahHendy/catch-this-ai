@@ -211,6 +211,9 @@ class StatsViewModel extends ChangeNotifier {
   }
 
   // Helpers to load history
+  // Note: The keywords returned from the repository are for the requested local time period,
+  // but the keyword timestamps are still in UTC for consistency.
+  // The keyword timestamps themselves are not used in the stats, focusing on counts.
   void _loadDayHistory() {
     final today = DateTime.now();
     final todayHistory = _repo.getLocalDayKeywords(today);

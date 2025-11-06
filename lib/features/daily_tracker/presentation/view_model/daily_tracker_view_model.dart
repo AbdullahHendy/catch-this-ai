@@ -103,6 +103,7 @@ class DailyTrackerViewModel extends ChangeNotifier {
   // Helper to load today's history
   void _loadTodayHistory() {
     final today = DateTime.now();
+    // Get today's history from the repository (keywords returned for the local day but keyword timestamps are in UTC)
     final todayHistory = _repo.getLocalDayKeywords(today);
 
     // Clear and reload the day's history with animation
@@ -110,7 +111,11 @@ class DailyTrackerViewModel extends ChangeNotifier {
 
     final animatedList = historyListKey?.currentState as AnimatedListState?;
     for (final keyword in todayHistory) {
-      _dayKeywordHistory.insert(0, keyword);
+      final keywordLocal = TrackedKeyword(
+        keyword.keyword,
+        keyword.timestamp.toLocal(),
+      );
+      _dayKeywordHistory.insert(0, keywordLocal);
       animatedList?.insertItem(0);
     }
 
