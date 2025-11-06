@@ -55,39 +55,66 @@ class _DailyTrackerHistoryListViewState
 
           return SizeTransition(
             sizeFactor: animation,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    keyword.keyword,
-                    style: theme.textTheme.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('|', style: textTheme.bodyLarge),
-                  const SizedBox(width: 8),
-                  Text(
-                    formattedDate,
-                    style: textTheme.bodyMedium!.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.8,
+            child: Padding(
+              // Side padding for each list item to avoid touching screen edges
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      keyword.keyword,
+                      style: theme.textTheme.bodyLarge!.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('|', style: textTheme.bodyLarge),
-                  const SizedBox(width: 8),
-                  Text(
-                    formattedTime,
-                    style: textTheme.bodyMedium!.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.8,
+                    const SizedBox(height: 0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          formattedDate,
+                          style: textTheme.bodyMedium!.copyWith(
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('|', style: textTheme.bodyLarge),
+                        const SizedBox(width: 8),
+                        Text(
+                          formattedTime,
+                          style: textTheme.bodyMedium!.copyWith(
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Add a faded separator line below each item except the first and last one
+                    if (index != 0 &&
+                        index != trackerViewModel.dayKeywordHistory.length - 1)
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 10),
+                        height: 1,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              colorScheme.outlineVariant.withValues(alpha: 0.2),
+                              Colors.transparent,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
