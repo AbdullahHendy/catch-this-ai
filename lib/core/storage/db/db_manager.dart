@@ -1,4 +1,4 @@
-import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/domain/tracked_text.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 /// Responsible for initializing and providing access to Hive database boxes.
@@ -19,7 +19,7 @@ class DBManager {
     // Map of adapter IDs to their registerAdapter function calls
     // This is done to avoid dynamic registration when doing registerAdapter() without explicitly specifying the adapter type
     final Map<int, Function()> adaptersReg = {
-      0: () => Hive.registerAdapter<TrackedKeyword>(TrackedKeywordAdapter()),
+      0: () => Hive.registerAdapter<TrackedText>(TrackedTextAdapter()),
     };
 
     for (var entry in adaptersReg.entries) {

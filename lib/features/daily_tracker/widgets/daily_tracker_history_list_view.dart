@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:catch_this_ai/features/daily_tracker/presentation/view_model/daily_tracker_view_model.dart';
+import 'package:catch_this_ai/features/daily_tracker/widgets/daily_tracker_text_highlighter.dart';
 
-/// Widget to display the list of tracked keywords for the day
+/// Widget to display the list of tracked texts for the day
 class DailyTrackerHistoryListView extends StatefulWidget {
   const DailyTrackerHistoryListView({super.key});
 
@@ -47,47 +48,70 @@ class _DailyTrackerHistoryListViewState
         key: _key,
         reverse: true,
         padding: const EdgeInsets.only(top: 100),
-        initialItemCount: trackerViewModel.totalDayCount,
+        initialItemCount: trackerViewModel.dayTextHistory.length,
         itemBuilder: (context, index, animation) {
-          final keyword = trackerViewModel.dayKeywordHistory[index];
-          String formattedDate = dateFormatter.format(keyword.timestamp);
-          String formattedTime = timeFormatter.format(keyword.timestamp);
+          final textItem = trackerViewModel.dayTextHistory[index];
+          String formattedDate = dateFormatter.format(textItem.timestamp);
+          String formattedTime = timeFormatter.format(textItem.timestamp);
 
           return SizeTransition(
             sizeFactor: animation,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    keyword.keyword,
-                    style: theme.textTheme.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.bold,
+            child: Padding(
+              // Side padding for each list item to avoid touching screen edges
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    DailyTrackerTextHighlighter(
+                      text: textItem.text,
+                      keywords: textItem.keywords,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('|', style: textTheme.bodyLarge),
-                  const SizedBox(width: 8),
-                  Text(
-                    formattedDate,
-                    style: textTheme.bodyMedium!.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.8,
+                    const SizedBox(height: 0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          formattedDate,
+                          style: textTheme.bodyMedium!.copyWith(
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('|', style: textTheme.bodyLarge),
+                        const SizedBox(width: 8),
+                        Text(
+                          formattedTime,
+                          style: textTheme.bodyMedium!.copyWith(
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Add a faded separator line below each item except the first one
+                    if (index != 0)
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 10),
+                        height: 1,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              colorScheme.outlineVariant.withValues(alpha: 0.2),
+                              Colors.transparent,
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('|', style: textTheme.bodyLarge),
-                  const SizedBox(width: 8),
-                  Text(
-                    formattedTime,
-                    style: textTheme.bodyMedium!.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.8,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

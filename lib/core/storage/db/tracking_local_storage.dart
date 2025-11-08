@@ -1,34 +1,34 @@
-import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/domain/tracked_text.dart';
 import 'package:catch_this_ai/core/storage/db/db_manager.dart';
 import 'package:hive_flutter/adapters.dart';
 
-/// Local storage service for tracking keywords using Hive box
+/// Local storage service for tracking texts using Hive box
 class TrackingLocalStorage {
   late final DBManager _dbManager;
 
-  late Box<TrackedKeyword> _trackingBox;
+  late Box<TrackedText> _trackingBox;
 
   TrackingLocalStorage(this._dbManager);
 
-  // Open the box for tracked keywords
+  // Open the box for tracked texts
   Future<void> init() async {
-    const String boxName = 'tracked_keywords_box';
+    const String boxName = 'tracked_texts_box';
 
-    _trackingBox = await _dbManager.openBox<TrackedKeyword>(boxName);
+    _trackingBox = await _dbManager.openBox<TrackedText>(boxName);
   }
 
-  // Add a tracked keyword to the local storage
-  Future<void> addTrackedKeyword(TrackedKeyword trackedKeyword) async {
-    await _trackingBox.add(trackedKeyword);
+  // Add a tracked text to the local storage
+  Future<void> addTrackedText(TrackedText trackedText) async {
+    await _trackingBox.add(trackedText);
   }
 
-  // Retrieve all tracked keywords from local storage
-  List<TrackedKeyword> getAllTrackedKeywords() {
+  // Retrieve all tracked texts from local storage
+  List<TrackedText> getAllTrackedTexts() {
     return _trackingBox.values.toList();
   }
 
-  // Clear all tracked keywords from local storage
-  Future<void> clearTrackedKeywords() async {
+  // Clear all tracked texts from local storage
+  Future<void> clearTrackedTexts() async {
     await _trackingBox.clear();
   }
 

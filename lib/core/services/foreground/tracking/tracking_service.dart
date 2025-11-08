@@ -2,12 +2,12 @@ import 'dart:io';
 import 'package:flutter_exit_app/flutter_exit_app.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/domain/tracked_text.dart';
 import 'package:catch_this_ai/core/services/foreground/tracking/tracking_task_handler.dart';
 import 'package:record/record.dart';
 
-// Callback type definition for handling tracked keywords from the foreground service
-typedef TrackedKeywordCallback = void Function(TrackedKeyword);
+// Callback type definition for handling tracked texts from the foreground service
+typedef TrackedTextCallback = void Function(TrackedText);
 
 /// Singleton tracker service to manage foreground tracking tasks
 /// It's made singleton since only one tracking service should be active at a time
@@ -62,9 +62,9 @@ class TrackingService {
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
         channelId: 'tracker_service',
-        channelName: 'Keyword Tracker Service',
+        channelName: 'Text Tracker Service',
         channelDescription:
-            'This notification appears when the keyword tracker is running in the foreground.',
+            'This notification appears when the text tracker is running in the foreground.',
         channelImportance: NotificationChannelImportance.MAX,
         priority: NotificationPriority.MAX,
         playSound: true,
@@ -114,34 +114,35 @@ class TrackingService {
 
   // ------------- Service Callbacks -------------
 
-  // List of registered callbacks to notify when a tracked keyword is received
-  // This is for future profing in case multiple parts of the app want to listen to tracked keywords
+  // List of registered callbacks to notify when a tracked text is received
+  // This is for future profing in case multiple parts of the app want to listen to tracked texts
   // Right now only one listener is used in the ViewModel
-  final List<TrackedKeywordCallback> _callbacks = [];
+  final List<TrackedTextCallback> _callbacks = [];
 
-  // Add a callback to be notified when a tracked keyword is received
-  void registerTrackedKeywordCallback(TrackedKeywordCallback callback) {
+  // Add a callback to be notified when a tracked text is received
+  void registerTrackedTextCallback(TrackedTextCallback callback) {
     if (!_callbacks.contains(callback)) _callbacks.add(callback);
   }
 
   // Remove a previously registered callback
-  void unregisterTrackedKeywordCallback(TrackedKeywordCallback callback) {
+  void unregisterTrackedTextCallback(TrackedTextCallback callback) {
     _callbacks.remove(callback);
   }
 
   // Internal method to handle data received from the foreground task
   void _onReceiveTaskData(Object data) {
-    // Check if the data is a tracked keyword map
-    bool isTrackedKeywordData =
+    // Check if the data is a tracked text map
+    bool isTrackedTextData =
         data is Map<String, dynamic> &&
-        data.containsKey('keyword') &&
+        data.containsKey('text') &&
+        data.containsKey('keywords') &&
         data.containsKey('timestamp');
 
-    if (isTrackedKeywordData) {
-      final trackedKeyword = TrackedKeywordSerialization.fromMap(data);
-      // Execute all registered callbacks with the received tracked keyword
+    if (isTrackedTextData) {
+      final trackedText = TrackedTextSerialization.fromMap(data);
+      // Execute all registered callbacks with the received tracked text
       for (final callback in _callbacks) {
-        callback(trackedKeyword);
+        callback(trackedText);
       }
     }
 

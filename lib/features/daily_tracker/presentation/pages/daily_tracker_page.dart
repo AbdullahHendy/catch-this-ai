@@ -30,12 +30,12 @@ class DailyTrackerPage extends StatelessWidget {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             const Expanded(flex: 3, child: DailyTrackerHistoryListView()),
             const SizedBox(height: 10),
             DailyTrackerCountCard(totalDayCount: count),
-            const Spacer(flex: 2),
+            const Spacer(flex: 1),
           ],
         ),
       ),
