@@ -12,12 +12,12 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
 # Progress 
 * **DONE**
     * Logic for audio processing using `recorder`
-    * KeywordSpotting using `sherpa onnx`
+    * **KeywordSpotting** (KWS) using `sherpa onnx`, **OnlineRecognizer** (ASR) option using `sherpa onnx`
     * Simple UI
     * Runs in the background (as long as app is open in the background)
-    * Detects keywords in this [`keywords.txt` file](./assets/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01/keywords.txt)
-    * Detected keywords are stored with their timestamps in a Hive binary database
-    * Spotted keywords are published in a {String keyword, DateTime timestamp} and saved in the database
+    * Detects keywords in this `keywords.txt` file of [both models](./assets/)
+    * Spotted "texts" are published as the [`TrackedText`](./lib/core/domain/tracked_text.dart) in the form {String text, List<String> keywords, DateTime timestamp} and saved in the [`Hive`](./lib/core/storage/db/db_manager.dart) database
+    * In the case of [**KWS**](./lib/core/services/speech/asr/sherpa_asr_service.dart), `keywords` of **TrackedText** is a list with single element, the same as, `text`
     * Home page keeps track of counts of keyword daily
     * Apps runns in the background
     * Included Stats Page
@@ -26,8 +26,6 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Verify if the [current behavior](#current-behavior) is the desired one
     * UI/UX needs improvement
     * Missing Settings page
-    * Look into offloading, everythign is currently in main thread
-    * Add option to stop, other settings (Settings Page)
+    * Add option to select **ASR** or **KWS**, clear database, along with other settings (Settings Page)
     * See TODOs in files
-    * Decide if wanna continue with `KeywordSpotter` or full `Online ASR` model
     * Cannot run in linux because of `recorder`, see `pubspec.yaml`
