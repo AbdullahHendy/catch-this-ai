@@ -30,5 +30,7 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * See TODOs in files
     * Cannot run in linux because of `recorder`, see `pubspec.yaml`
 
-* **BEFORE WORKING**
-    * Download assets using `./scripts/download_assets.sh` or equivalent ways of running the bash script.
+* **TO DEVELOP**
+    * Download assets using `./scripts/setup_assets.sh` or equivalent ways of running the bash script.
+    * To update keywords, edit the main `.text` files in [assets/](./assets/) then run `./scripts/setup_assets.sh`
+ 

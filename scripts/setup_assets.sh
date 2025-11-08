@@ -16,6 +16,7 @@ for model in "${!MODELS[@]}"; do
 
   mkdir -p "$ASSETS_DIR"
 
+  # If the model directory does not exist, download and extract it then remove the archive
   if [ ! -d "$dir" ]; then
     echo "⬇️  Downloading $model..."
     wget -q "$url" -O "$archive"
@@ -27,11 +28,13 @@ for model in "${!MODELS[@]}"; do
     echo "✅ $model already exists."
   fi
 
-  # Copy your keywords.txt and keywords_raw.txt if they exist
+  # Copy keywords.txt and keywords_raw.txt files and overwrite if they exist in the model directory
   if [ -f "$ASSETS_DIR/$model.keywords.txt" ]; then
+    echo "📝 Updating keywords.txt for $model..."
     cp "$ASSETS_DIR/$model.keywords.txt" "$dir/keywords.txt"
   fi
   if [ -f "$ASSETS_DIR/$model.keywords_raw.txt" ]; then
+    echo "📝 Updating keywords_raw.txt for $model..."
     cp "$ASSETS_DIR/$model.keywords_raw.txt" "$dir/keywords_raw.txt"
   fi
 done
