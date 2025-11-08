@@ -27,6 +27,9 @@ class SherpaAsrService implements SpeechToTextService {
   // Keywords list
   List<String> _keywords = [];
 
+  // Map to store regex patterns for keywords for quick access
+  final Map<String, RegExp> _keywordPatterns = {};
+
   // Available ASR model names
   static const List<String> availableModelNames = [
     'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20',
@@ -48,6 +51,15 @@ class SherpaAsrService implements SpeechToTextService {
     final hotwordsFilePath = await getKeywordsFilePath(modelName);
     // List of the content of the hotwords file
     _keywords = await getRawKeywords(modelName);
+
+    // Precompile regex patterns for all keywords
+    for (final keyword in _keywords) {
+      final pattern = RegExp(
+        r'\b' + RegExp.escape(keyword) + r'\b',
+        caseSensitive: false,
+      );
+      _keywordPatterns[keyword] = pattern;
+    }
 
     // Hotwords score boost value fallback if not specified in hotwords file
     const hotwordsScoreBoost = 1.5;
@@ -82,16 +94,12 @@ class SherpaAsrService implements SpeechToTextService {
     if (_recognizer!.isEndpoint(_stream!)) {
       // If endpoint is detected, emit the transcription only if it contains any of the keywords and reset the stream
       if (transcription.isNotEmpty) {
-        // Regex to find all keywords in the transcription if any
-        final detectedKeywords = _keywords.expand((keyword) {
-          final pattern = RegExp(
-            r'\b' + RegExp.escape(keyword) + r'\b',
-            caseSensitive: false,
-          );
+        // Use the precompiled regex patterns to find keywords in the transcription
+        final detectedKeywords = _keywordPatterns.entries.expand((entry) {
+          final keyword = entry.key;
+          final pattern = entry.value;
 
-          // Find all matches for the current keyword
           final allMatches = pattern.allMatches(transcription);
-
           return allMatches.map((match) => keyword);
         }).toList();
 
