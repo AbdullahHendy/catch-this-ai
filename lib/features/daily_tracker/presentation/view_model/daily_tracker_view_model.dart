@@ -126,7 +126,6 @@ class DailyTrackerViewModel extends ChangeNotifier {
       0,
       (previousValue, text) => previousValue + text.keywords.length,
     );
-    // _totalDayCount = _dayTextHistory.length;
     _currentDay = today;
   }
 }

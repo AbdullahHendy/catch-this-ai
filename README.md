@@ -17,7 +17,7 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Runs in the background (as long as app is open in the background)
     * Detects keywords in this `keywords.txt` file of [both models](./assets/)
     * Spotted "texts" are published as the [`TrackedText`](./lib/core/domain/tracked_text.dart) in the form {String text, List<String> keywords, DateTime timestamp} and saved in the [`Hive`](./lib/core/storage/db/db_manager.dart) database
-    * In the case of [**KWS**](./lib/core/services/speech/asr/sherpa_asr_service.dart), `keywords` of **TrackedText** is a list with single element, the same as, `text`
+    * In the case of [**KWS**](./lib/core/services/speech/kws/sherpa_kws_service.dart), `keywords` of **TrackedText** is a list with single element, the same as, `text`
     * Home page keeps track of counts of keyword daily
     * Apps runns in the background
     * Included Stats Page
