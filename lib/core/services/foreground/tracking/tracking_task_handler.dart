@@ -1,27 +1,29 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:catch_this_ai/core/services/speech/asr/sherpa_asr_service.dart';
 import 'package:catch_this_ai/core/services/audio/audio_stream_service.dart';
-import 'package:catch_this_ai/core/services/kws/sherpa_kws_service.dart';
-import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/services/speech/kws/sherpa_kws_service.dart';
+import 'package:catch_this_ai/core/domain/tracked_text.dart';
+import 'package:catch_this_ai/core/services/speech/speech_to_text_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:record/record.dart';
 
-// Top-level callback function to handle tracked keywords in the foreground task
+// Top-level callback function to handle tracked texts in the foreground task
 @pragma('vm:entry-point')
 void trackerTaskHandler() {
   FlutterForegroundTask.setTaskHandler(TrackerTaskHandler());
 }
 
-/// Foreground task handler to manage tracking keywords
+/// Foreground task handler to manage tracking texts
 class TrackerTaskHandler extends TaskHandler {
   // instances of audio stream service and kws service
   late final AudioStreamService _audioService;
-  late final SherpaKwsService _kwsService;
+  late final SpeechToTextService _speechService;
 
   // Subscription to audio stream and kws service to get handle to stop them later
   StreamSubscription<Float32List>? _audioSub;
-  StreamSubscription<String>? _kwsSub;
+  StreamSubscription<TrackedText>? _kwsSub;
 
   // Subscription to recording state changes to update notification accordingly
   StreamSubscription<RecordState>? _recordingStateSub;
@@ -30,27 +32,27 @@ class TrackerTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     _audioService = AudioStreamService();
-    _kwsService = SherpaKwsService();
+    // TODO: make service type configurable from settings: String serviceType should be sent from main isolate
+    // TODO: See: https://pub.dev/packages/flutter_foreground_task#hatched_chick-deepening
+    _speechService = _getSpeechService('asr');
 
-    // Initialize kws
-    const modelName = 'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01';
-    await _kwsService.init(modelName);
+    // Initialize the speech service with the desired model
+    const modelName =
+        'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20';
+    await _speechService.init(modelName);
 
     // Start audio streaming
     await _audioService.start();
 
-    // Listen to audio stream and pass audio data to KWS service for keyword detection
+    // Listen to audio stream and pass audio data to KWS service for text detection
     _audioSub = _audioService.audioStream.listen((audioData) {
-      _kwsService.detectKeywords(audioData);
+      _speechService.detectTexts(audioData);
     });
 
-    // Listen to detected keywords from KWS service and send them through the controller
-    _kwsSub = _kwsService.stream.listen((keyword) {
-      // TODO: HERE instead of trackedKeyword, there should be a wrapper that keeps the whole sentence in the case of OnlineRecognizer (sentence with possible multiple keywords)
-      // Create TrackedKeyword with current timestamp in UTC
-      final trackedKeyword = TrackedKeyword(keyword, DateTime.now().toUtc());
-      // Send the tracked keyword to the main isolate
-      FlutterForegroundTask.sendDataToMain(trackedKeyword.toMap());
+    // Listen to detected texts from KWS service and send them through the controller
+    _kwsSub = _speechService.stream.listen((text) {
+      // Send the tracked text to the main isolate
+      FlutterForegroundTask.sendDataToMain(text.toMap());
     });
 
     // Listen to recording state changes to update notification accordingly
@@ -72,7 +74,7 @@ class TrackerTaskHandler extends TaskHandler {
     await _audioSub?.cancel();
     await _kwsSub?.cancel();
     await _recordingStateSub?.cancel();
-    await _kwsService.dispose();
+    await _speechService.dispose();
     await _audioService.dispose();
   }
 
@@ -123,6 +125,20 @@ class TrackerTaskHandler extends TaskHandler {
     // If notification is dismissed, bring it back since its needed for controls like stop/start/exit
     // Effectively makes the notification sticky/undismissable
     _updateNotification();
+  }
+
+  // helper to pick which speech service to use based on settings
+  SpeechToTextService _getSpeechService(String serviceType) {
+    switch (serviceType.toLowerCase()) {
+      case 'asr':
+        return SherpaAsrService();
+
+      case 'kws':
+        return SherpaKwsService();
+
+      default:
+        throw Exception('Unknown speech service type: $serviceType');
+    }
   }
 
   // Helper method to update the service notification buttons and text based on the recording state

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:catch_this_ai/core/data/tracking_repository.dart';
-import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/domain/tracked_text.dart';
 import 'package:catch_this_ai/core/utils/time_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -9,15 +9,15 @@ class DailyTrackerViewModel extends ChangeNotifier {
   // instance of data broker/repository
   final TrackingRepository _repo;
 
-  // Subscribe to the tracked keywords stream to be able to dispose it later
-  StreamSubscription<TrackedKeyword>? _sub;
+  // Subscribe to the tracked texts stream to be able to dispose it later
+  StreamSubscription<TrackedText>? _sub;
 
   // Day check timer and tracking variables
   Timer? _dayCheckTimer;
   DateTime _currentDay = DateTime.now();
 
   // State variables
-  final List<TrackedKeyword> _dayKeywordHistory = [];
+  final List<TrackedText> _dayTextHistory = [];
   int _totalDayCount = 0;
   bool _isRunning = false;
 
@@ -25,13 +25,13 @@ class DailyTrackerViewModel extends ChangeNotifier {
   GlobalKey? historyListKey;
 
   // Getters for state variables for easy access
-  List<TrackedKeyword> get dayKeywordHistory => _dayKeywordHistory;
+  List<TrackedText> get dayTextHistory => _dayTextHistory;
   int get totalDayCount => _totalDayCount;
   bool get isRunning => _isRunning;
 
   DailyTrackerViewModel(this._repo);
 
-  // Start listening for tracked keywords
+  // Start listening for tracked texts
   Future<void> start() async {
     if (_isRunning) return;
 
@@ -39,9 +39,9 @@ class DailyTrackerViewModel extends ChangeNotifier {
     _loadTodayHistory();
     notifyListeners();
 
-    // Subscribe to the tracked keywords stream
-    _sub = _repo.stream.listen((trackedKeywordUTC) {
-      _onTrackedKeywordReceived(trackedKeywordUTC);
+    // Subscribe to the tracked texts stream
+    _sub = _repo.stream.listen((trackedTextUTC) {
+      _onTrackedTextReceived(trackedTextUTC);
     });
 
     // Timer to check for day changes every minute
@@ -76,26 +76,27 @@ class DailyTrackerViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  // Callback when a tracked keyword is received from the foreground task
-  Future<void> _onTrackedKeywordReceived(
-    TrackedKeyword trackedKeywordUTC,
-  ) async {
+  // Callback when a tracked text is received from the foreground task
+  Future<void> _onTrackedTextReceived(TrackedText TrackedTextUTC) async {
     final now = DateTime.now();
-    // Guard for the case when first keyword of the day is detected before the timer resets the day
+    // Guard for the case when first text of the day is detected before the timer resets the day
     if (!isSameDay(now, _currentDay)) {
       _loadTodayHistory();
     }
 
-    // Create a local tracked keyword for history list
-    final trackedKeywordLocal = TrackedKeyword(
-      trackedKeywordUTC.keyword,
-      trackedKeywordUTC.timestamp.toLocal(),
+    // Create a local tracked text for history list
+    final trackedTextLocal = TrackedText(
+      TrackedTextUTC.text,
+      TrackedTextUTC.keywords,
+      TrackedTextUTC.timestamp.toLocal(),
     );
 
-    _dayKeywordHistory.insert(0, trackedKeywordLocal);
+    _dayTextHistory.insert(0, trackedTextLocal);
     final animatedList = historyListKey?.currentState as AnimatedListState?;
     animatedList?.insertItem(0);
-    _totalDayCount++;
+
+    // Count total keywords for the text and add to total count
+    _totalDayCount += trackedTextLocal.keywords.length;
 
     notifyListeners();
   }
@@ -103,23 +104,29 @@ class DailyTrackerViewModel extends ChangeNotifier {
   // Helper to load today's history
   void _loadTodayHistory() {
     final today = DateTime.now();
-    // Get today's history from the repository (keywords returned for the local day but keyword timestamps are in UTC)
-    final todayHistory = _repo.getLocalDayKeywords(today);
+    // Get today's history from the repository (texts returned for the local day but text timestamps are in UTC)
+    final todayHistory = _repo.getLocalDayTexts(today);
 
     // Clear and reload the day's history with animation
-    _dayKeywordHistory.clear();
+    _dayTextHistory.clear();
 
     final animatedList = historyListKey?.currentState as AnimatedListState?;
-    for (final keyword in todayHistory) {
-      final keywordLocal = TrackedKeyword(
-        keyword.keyword,
-        keyword.timestamp.toLocal(),
+    for (final text in todayHistory) {
+      final textLocal = TrackedText(
+        text.text,
+        text.keywords,
+        text.timestamp.toLocal(),
       );
-      _dayKeywordHistory.insert(0, keywordLocal);
+      _dayTextHistory.insert(0, textLocal);
       animatedList?.insertItem(0);
     }
 
-    _totalDayCount = _dayKeywordHistory.length;
+    // _totalDayCount is the total number of keywords within each text for today
+    _totalDayCount = todayHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
+    // _totalDayCount = _dayTextHistory.length;
     _currentDay = today;
   }
 }

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:catch_this_ai/core/data/tracking_repository.dart';
-import 'package:catch_this_ai/core/domain/tracked_keyword.dart';
+import 'package:catch_this_ai/core/domain/tracked_text.dart';
 import 'package:flutter/material.dart';
 import 'package:catch_this_ai/core/utils/time_utils.dart';
 
@@ -35,8 +35,8 @@ class StatsViewModel extends ChangeNotifier {
   // instance of data broker/repository
   final TrackingRepository _repo;
 
-  // Subscribe to the tracked keywords stream to be able to dispose it later
-  StreamSubscription<TrackedKeyword>? _sub;
+  // Subscribe to the tracked texts stream to be able to dispose it later
+  StreamSubscription<TrackedText>? _sub;
 
   // Timer to check for day, week, month changes
   Timer? _changeCheckTimer;
@@ -45,9 +45,9 @@ class StatsViewModel extends ChangeNotifier {
   DateTime _currentMonth = DateTime.now();
 
   // State variables
-  final List<TrackedKeyword> _dayKeywordHistory = [];
-  final List<TrackedKeyword> _weekKeywordHistory = [];
-  final List<TrackedKeyword> _monthKeywordHistory = [];
+  final List<TrackedText> _dayTextHistory = [];
+  final List<TrackedText> _weekTextHistory = [];
+  final List<TrackedText> _monthTextHistory = [];
   int _totalDayCount = 0;
   int _totalWeekCount = 0;
   int _totalMonthCount = 0;
@@ -62,17 +62,17 @@ class StatsViewModel extends ChangeNotifier {
 
   ChartTimeFrame _selectedChartTimeFrame = ChartTimeFrame.week;
 
-  Map<DateTime, List<TrackedKeyword>> _last7DaysKeywordsMap = {};
-  Map<DateTime, List<TrackedKeyword>> _last30DaysKeywordsMap = {};
+  Map<DateTime, List<TrackedText>> _last7DaysTextsMap = {};
+  Map<DateTime, List<TrackedText>> _last30DaysTextsMap = {};
   Map<DateTime, int> _last7DaysCountsMap = {};
   Map<DateTime, int> _last30DaysCountsMap = {};
 
   bool _isRunning = false;
 
   // Getters for state variables for easy access
-  List<TrackedKeyword> get dayKeywordHistory => _dayKeywordHistory;
-  List<TrackedKeyword> get weekKeywordHistory => _weekKeywordHistory;
-  List<TrackedKeyword> get monthKeywordHistory => _monthKeywordHistory;
+  List<TrackedText> get dayTextHistory => _dayTextHistory;
+  List<TrackedText> get weekTextHistory => _weekTextHistory;
+  List<TrackedText> get monthTextHistory => _monthTextHistory;
 
   int get totalDayCount => _totalDayCount;
   int get totalWeekCount => _totalWeekCount;
@@ -85,10 +85,9 @@ class StatsViewModel extends ChangeNotifier {
   ChartTimeFrame get selectedChartTimeFrame => _selectedChartTimeFrame;
   List<ChartTimeFrame> get chartTimeFrames => ChartTimeFrame.values;
 
-  Map<DateTime, List<TrackedKeyword>> get last7DaysKeywordsMap =>
-      _last7DaysKeywordsMap;
-  Map<DateTime, List<TrackedKeyword>> get last30DaysKeywordsMap =>
-      _last30DaysKeywordsMap;
+  Map<DateTime, List<TrackedText>> get last7DaysTextsMap => _last7DaysTextsMap;
+  Map<DateTime, List<TrackedText>> get last30DaysTextsMap =>
+      _last30DaysTextsMap;
 
   Map<DateTime, int> get last7DaysCountsMap => _last7DaysCountsMap;
   Map<DateTime, int> get last30DaysCountsMap => _last30DaysCountsMap;
@@ -97,7 +96,7 @@ class StatsViewModel extends ChangeNotifier {
 
   StatsViewModel(this._repo);
 
-  // Start listening for tracked keywords
+  // Start listening for tracked texts
   Future<void> start() async {
     if (_isRunning) return;
     _isRunning = true;
@@ -106,9 +105,9 @@ class StatsViewModel extends ChangeNotifier {
     _init();
     notifyListeners();
 
-    // Subscribe to the tracked keywords stream
-    _sub = _repo.stream.listen((trackedKeywordUTC) {
-      _onTrackedKeywordReceived(trackedKeywordUTC);
+    // Subscribe to the tracked texts stream
+    _sub = _repo.stream.listen((trackedTextUTC) {
+      _onTrackedTextReceived(trackedTextUTC);
     });
 
     // Timer to check for changes every minute
@@ -153,15 +152,13 @@ class StatsViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  // Callback when a tracked keyword is received from the foreground task
-  Future<void> _onTrackedKeywordReceived(
-    TrackedKeyword trackedKeywordUTC,
-  ) async {
+  // Callback when a tracked text is received from the foreground task
+  Future<void> _onTrackedTextReceived(TrackedText trackedTextUTC) async {
     final now = DateTime.now();
-    // Guard for the cases when first keyword of the day/week/month is detected
+    // Guard for the cases when first text of the day/week/month is detected
     // before the timer resets the day/week/month.
     // This is fine because when the timer ticks next, it will reload the histories again,
-    // which will have the updated keywords.
+    // which will have the updated texts.
     if (!isSameDay(now, _currentDay)) {
       _onDayChanged();
     }
@@ -174,82 +171,101 @@ class StatsViewModel extends ChangeNotifier {
       _onMonthChanged();
     }
 
-    // Create a local tracked keyword for history lists
-    final trackedKeywordLocal = TrackedKeyword(
-      trackedKeywordUTC.keyword,
-      trackedKeywordUTC.timestamp.toLocal(),
+    // Create a local tracked text for history lists
+    final trackedTextLocal = TrackedText(
+      trackedTextUTC.text,
+      trackedTextUTC.keywords,
+      trackedTextUTC.timestamp.toLocal(),
     );
-    _dayKeywordHistory.insert(0, trackedKeywordLocal);
-    _weekKeywordHistory.insert(0, trackedKeywordLocal);
-    _monthKeywordHistory.insert(0, trackedKeywordLocal);
-    _totalDayCount++;
-    _totalWeekCount++;
-    _totalMonthCount++;
+    _dayTextHistory.insert(0, trackedTextLocal);
+    _weekTextHistory.insert(0, trackedTextLocal);
+    _monthTextHistory.insert(0, trackedTextLocal);
+    // Counts are the total number of keywords within each text
+    _totalDayCount += trackedTextLocal.keywords.length;
+    _totalWeekCount += trackedTextLocal.keywords.length;
+    _totalMonthCount += trackedTextLocal.keywords.length;
 
     // Recalculate percentage changes
     _percentChanges();
 
-    // Update last 7 and 30 days keywords maps and counts maps
-    // In _last7DaysKeywordsMap and _last30DaysKeywordsMap, replace the list for the day of the new keyword with the updated list (_dayKeywordHistory)
-    // For the first detected word of the day, the day entry might not exist yet in the maps,
+    // Update last 7 and 30 days texts maps and counts maps
+    // In _last7DaysTextsMap and _last30DaysTextsMap, replace the list for the day of the new text with the updated list (_dayTextHistory)
+    // For the first detected text of the day, the day entry might not exist yet in the maps,
     // depending on whether padEmptyDays was used when loading the maps or not.
     // Maps' keys are DateTime objects representing exact days (year, month, day) without time component.
 
-    // _lastXDaysKeywordsMap is grouped by local day keys
+    // _lastXDaysTextsMap is grouped by local day keys
     final dayKey = DateTime(
-      trackedKeywordLocal.timestamp.year,
-      trackedKeywordLocal.timestamp.month,
-      trackedKeywordLocal.timestamp.day,
+      trackedTextLocal.timestamp.year,
+      trackedTextLocal.timestamp.month,
+      trackedTextLocal.timestamp.day,
     );
-    _last7DaysKeywordsMap[dayKey] = List.from(_dayKeywordHistory);
-    _last30DaysKeywordsMap[dayKey] = List.from(_dayKeywordHistory);
+    _last7DaysTextsMap[dayKey] = List.from(_dayTextHistory);
+    _last30DaysTextsMap[dayKey] = List.from(_dayTextHistory);
 
-    _last7DaysCountsMap[dayKey] = _dayKeywordHistory.length;
-    _last30DaysCountsMap[dayKey] = _dayKeywordHistory.length;
+    // Counts are the length of keywords lists within each text for the day
+    _last7DaysCountsMap[dayKey] = _dayTextHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
+
+    _last30DaysCountsMap[dayKey] = _dayTextHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
 
     notifyListeners();
   }
 
   // Helpers to load history
-  // Note: The keywords returned from the repository are for the requested local time period,
-  // but the keyword timestamps are still in UTC for consistency.
-  // The keyword timestamps themselves are not used in the stats, focusing on counts.
+  // Note: The texts returned from the repository are for the requested local time period,
+  // but the text timestamps are still in UTC for consistency.
+  // The text timestamps themselves are not used in the stats, focusing on counts.
   void _loadDayHistory() {
     final today = DateTime.now();
-    final todayHistory = _repo.getLocalDayKeywords(today);
+    final todayHistory = _repo.getLocalDayTexts(today);
 
     // Clear and reload the day's history
-    _dayKeywordHistory
+    _dayTextHistory
       ..clear()
       ..addAll(todayHistory.reversed);
 
-    _totalDayCount = _dayKeywordHistory.length;
+    _totalDayCount = _dayTextHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
     _currentDay = today;
   }
 
   void _loadWeekHistory() {
     final today = DateTime.now();
-    final weekHistory = _repo.getLocalWeekKeywords(today);
+    final weekHistory = _repo.getLocalWeekTexts(today);
 
     // Clear and reload the week's history
-    _weekKeywordHistory
+    _weekTextHistory
       ..clear()
       ..addAll(weekHistory.reversed);
 
-    _totalWeekCount = _weekKeywordHistory.length;
+    _totalWeekCount = _weekTextHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
     _currentWeek = today;
   }
 
   void _loadMonthHistory() {
     final today = DateTime.now();
-    final monthHistory = _repo.getLocalMonthKeywords(today);
+    final monthHistory = _repo.getLocalMonthTexts(today);
 
     // Clear and reload the month's history
-    _monthKeywordHistory
+    _monthTextHistory
       ..clear()
       ..addAll(monthHistory.reversed);
 
-    _totalMonthCount = _monthKeywordHistory.length;
+    _totalMonthCount = _monthTextHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
     _currentMonth = today;
   }
 
@@ -262,16 +278,22 @@ class StatsViewModel extends ChangeNotifier {
   // Helper to load last period histories counts
   void _loadLastDayHistoryCount() {
     final yesterday = _currentDay.subtract(const Duration(days: 1));
-    final yesterdayHistory = _repo.getLocalDayKeywords(yesterday);
+    final yesterdayHistory = _repo.getLocalDayTexts(yesterday);
 
-    _totalLastDayCount = yesterdayHistory.length;
+    _totalLastDayCount = yesterdayHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
   }
 
   void _loadLastWeekHistoryCount() {
     final lastWeekDay = _currentWeek.subtract(const Duration(days: 7));
-    final lastWeekHistory = _repo.getLocalWeekKeywords(lastWeekDay);
+    final lastWeekHistory = _repo.getLocalWeekTexts(lastWeekDay);
 
-    _totalLastWeekCount = lastWeekHistory.length;
+    _totalLastWeekCount = lastWeekHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
   }
 
   void _loadLastMonthHistoryCount() {
@@ -280,9 +302,12 @@ class StatsViewModel extends ChangeNotifier {
         ? DateTime(_currentMonth.year - 1, DateTime.december)
         : DateTime(_currentMonth.year, _currentMonth.month - 1);
 
-    final lastMonthHistory = _repo.getLocalMonthKeywords(lastMonth);
+    final lastMonthHistory = _repo.getLocalMonthTexts(lastMonth);
 
-    _totalLastMonthCount = lastMonthHistory.length;
+    _totalLastMonthCount = lastMonthHistory.fold<int>(
+      0,
+      (previousValue, text) => previousValue + text.keywords.length,
+    );
   }
 
   void _loadLastHistoryCounts() {
@@ -330,16 +355,16 @@ class StatsViewModel extends ChangeNotifier {
     _monthPercentChange();
   }
 
-  // Helpers for updating last7DaysKeywordsMap and last30DaysKeywordsMap
-  void _loadRecentDaysKeywordsMaps() {
+  // Helpers for updating last7DaysTextsMap and last30DaysTextsMap
+  void _loadRecentDaysTextsMaps() {
     // TODO: app wide option should determine whether to pad empty days or not, which should also affect the UI styling of the charts
     final bool padEmptyDays = true;
-    _last7DaysKeywordsMap = _repo.getRecentLocalDaysKeywordsMap(
+    _last7DaysTextsMap = _repo.getRecentLocalDaysTextsMap(
       _currentDay,
       7,
       padEmptyDays,
     );
-    _last30DaysKeywordsMap = _repo.getRecentLocalDaysKeywordsMap(
+    _last30DaysTextsMap = _repo.getRecentLocalDaysTextsMap(
       _currentDay,
       30,
       padEmptyDays,
@@ -347,12 +372,24 @@ class StatsViewModel extends ChangeNotifier {
   }
 
   void _loadRecentDaysKeywordsCountsMaps() {
-    _last7DaysCountsMap = _last7DaysKeywordsMap.map(
-      (day, keywords) => MapEntry(day, keywords.length),
+    _last7DaysCountsMap = _last7DaysTextsMap.map(
+      (day, texts) => MapEntry(
+        day,
+        texts.fold<int>(
+          0,
+          (previousValue, text) => previousValue + text.keywords.length,
+        ),
+      ),
     );
 
-    _last30DaysCountsMap = _last30DaysKeywordsMap.map(
-      (day, keywords) => MapEntry(day, keywords.length),
+    _last30DaysCountsMap = _last30DaysTextsMap.map(
+      (day, texts) => MapEntry(
+        day,
+        texts.fold<int>(
+          0,
+          (previousValue, text) => previousValue + text.keywords.length,
+        ),
+      ),
     );
   }
 
@@ -361,7 +398,7 @@ class StatsViewModel extends ChangeNotifier {
     _loadDayHistory();
     _loadLastDayHistoryCount();
     _dayPercentChange();
-    _loadRecentDaysKeywordsMaps();
+    _loadRecentDaysTextsMaps();
     _loadRecentDaysKeywordsCountsMaps();
   }
 
@@ -369,7 +406,7 @@ class StatsViewModel extends ChangeNotifier {
     _loadWeekHistory();
     _loadLastWeekHistoryCount();
     _weekPercentChange();
-    _loadRecentDaysKeywordsMaps();
+    _loadRecentDaysTextsMaps();
     _loadRecentDaysKeywordsCountsMaps();
   }
 
@@ -377,7 +414,7 @@ class StatsViewModel extends ChangeNotifier {
     _loadMonthHistory();
     _loadLastMonthHistoryCount();
     _monthPercentChange();
-    _loadRecentDaysKeywordsMaps();
+    _loadRecentDaysTextsMaps();
     _loadRecentDaysKeywordsCountsMaps();
   }
 
@@ -390,8 +427,8 @@ class StatsViewModel extends ChangeNotifier {
     // Calculate initial percentage changes
     _percentChanges();
 
-    // Load last 7 and 30 days keywords maps and count maps for charts
-    _loadRecentDaysKeywordsMaps();
+    // Load last 7 and 30 days texts maps and count maps for charts
+    _loadRecentDaysTextsMaps();
     _loadRecentDaysKeywordsCountsMaps();
   }
 
