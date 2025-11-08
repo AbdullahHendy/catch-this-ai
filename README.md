@@ -33,4 +33,3 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
 * **TO DEVELOP**
     * Download assets using `./scripts/setup_assets.sh` or equivalent ways of running the bash script.
     * To update keywords, edit the main `.text` files in [assets/](./assets/) then run `./scripts/setup_assets.sh`
- 
