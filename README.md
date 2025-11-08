@@ -29,3 +29,6 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Add option to select **ASR** or **KWS**, clear database, along with other settings (Settings Page)
     * See TODOs in files
     * Cannot run in linux because of `recorder`, see `pubspec.yaml`
+
+* **BEFORE WORKING**
+    * Download assets using `./scripts/download_assets.sh` or equivalent ways of running the bash script.
