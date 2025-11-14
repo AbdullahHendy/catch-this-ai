@@ -85,15 +85,15 @@ class TrackingService {
 
   // Start the foreground tracking service. Should init() and requestPermissions() first.
   Future<void> start(String speechServiceType) async {
+    // Save the desired speech service type to be retrieved in the TaskHandler
+    await FlutterForegroundTask.saveData(
+      key: TaskCommands.speechServiceType,
+      value: speechServiceType,
+    );
+
     if (await FlutterForegroundTask.isRunningService) {
       await FlutterForegroundTask.restartService();
     } else {
-      // Save the desired speech service type to be retrieved in the TaskHandler
-      await FlutterForegroundTask.saveData(
-        key: TaskCommands.speechServiceType,
-        value: speechServiceType,
-      );
-
       // Notification buttons, texts are updated later in the TrackerTaskHandler
       await FlutterForegroundTask.startService(
         serviceId: 256,

@@ -1,3 +1,4 @@
+import 'package:catch_this_ai/features/settings/presentation/view_model/settings_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -36,7 +37,10 @@ class _DailyTrackerHistoryListViewState
     // Access the DailyTrackerViewModel
     final trackerViewModel = context.watch<DailyTrackerViewModel>();
     trackerViewModel.historyListKey = _key;
-    final keywordsOnly = trackerViewModel.keywordsOnly;
+
+    // Access the SettingsViewModel
+    final settingsViewModel = context.read<SettingsViewModel>();
+    final keywordsOnly = settingsViewModel.keywordsOnlyMode;
 
     // Formatters for only date and only time
     final dateFormatter = DateFormat.yMMMd();

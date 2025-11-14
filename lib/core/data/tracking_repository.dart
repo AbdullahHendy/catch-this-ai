@@ -282,6 +282,11 @@ class TrackingRepository {
     await _trackingService.switchSpeechServiceType(newServiceType);
   }
 
+  // Get current speech service type
+  String getServiceType() {
+    return _settingsLocalStorage.getSpeechServiceType();
+  }
+
   // Set keywords only mode
   Future<void> setKeywordsOnlyMode(bool isEnabled) async {
     await _settingsLocalStorage.setKeywordsOnlyMode(isEnabled);
