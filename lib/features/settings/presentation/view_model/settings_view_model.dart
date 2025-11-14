@@ -44,7 +44,6 @@ class SettingsViewModel extends ChangeNotifier {
   // Clear Data
   Future<void> clearTrackingData() async {
     await _repo.clearTrackingData();
-    _currentServiceType = 'asr';
     notifyListeners();
   }
 

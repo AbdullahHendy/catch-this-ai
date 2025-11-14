@@ -300,6 +300,9 @@ class TrackingRepository {
   // Clear all tracking data
   Future<void> clearTrackingData() async {
     await _trackingLocalStorage.clearTrackedTexts();
+    // Also clear cached texts and grouped map
+    _cachedTexts.clear();
+    _textsByLocalDayMap.clear();
   }
 
   // Clear all settings
