@@ -34,19 +34,20 @@ class TrackerTaskHandler extends TaskHandler {
     _audioService = AudioStreamService();
 
     // Get data saved when starting the service with speechServiceType using getData()
-    // TODO: Look into null safety stuff here
-    final String savedSpeechServiceType = await FlutterForegroundTask.getData(
+    final String? savedSpeechServiceType = await FlutterForegroundTask.getData(
       key: TaskCommands.speechServiceType,
     );
-    _speechService = _getSpeechService(savedSpeechServiceType.toLowerCase());
+    _speechService = _getSpeechService(
+      savedSpeechServiceType?.toLowerCase() ?? 'asr',
+    );
 
     // Initialize the speech service with the desired model
-    final modelName = savedSpeechServiceType.toLowerCase() == 'asr'
+    final modelName = savedSpeechServiceType?.toLowerCase() == 'asr'
         ? 'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20'
         : 'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01';
     FlutterForegroundTask.updateService(
       notificationText:
-          'Initializing ${savedSpeechServiceType.toUpperCase()} model...',
+          'Initializing ${savedSpeechServiceType?.toUpperCase() ?? 'ASR'} model...',
     );
     await _speechService.init(modelName);
 
