@@ -36,6 +36,7 @@ class _DailyTrackerHistoryListViewState
     // Access the DailyTrackerViewModel
     final trackerViewModel = context.watch<DailyTrackerViewModel>();
     trackerViewModel.historyListKey = _key;
+    final keywordsOnly = trackerViewModel.keywordsOnly;
 
     // Formatters for only date and only time
     final dateFormatter = DateFormat.yMMMd();
@@ -64,10 +65,20 @@ class _DailyTrackerHistoryListViewState
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    DailyTrackerTextHighlighter(
-                      text: textItem.text,
-                      keywords: textItem.keywords,
-                    ),
+                    if (keywordsOnly)
+                      // Keywords-only view
+                      Text(
+                        textItem.keywords.join('  -  '),
+                        style: textTheme.bodyLarge!.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      )
+                    else
+                      DailyTrackerTextHighlighter(
+                        text: textItem.text,
+                        keywords: textItem.keywords,
+                      ),
                     const SizedBox(height: 0),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

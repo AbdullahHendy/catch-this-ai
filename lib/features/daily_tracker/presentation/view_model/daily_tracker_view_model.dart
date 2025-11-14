@@ -20,6 +20,7 @@ class DailyTrackerViewModel extends ChangeNotifier {
   final List<TrackedText> _dayTextHistory = [];
   int _totalDayCount = 0;
   bool _isRunning = false;
+  bool _keywordsOnly = false;
 
   // GlobalKey for AnimatedList in history view
   GlobalKey? historyListKey;
@@ -28,8 +29,16 @@ class DailyTrackerViewModel extends ChangeNotifier {
   List<TrackedText> get dayTextHistory => _dayTextHistory;
   int get totalDayCount => _totalDayCount;
   bool get isRunning => _isRunning;
+  bool get keywordsOnly => _keywordsOnly;
 
   DailyTrackerViewModel(this._repo);
+
+  // Setter for keywordsOnly to update the state
+  // TODO: should be set from settings page and persisted
+  void setKeywordsOnly(bool value) {
+    _keywordsOnly = value;
+    notifyListeners();
+  }
 
   // Start listening for tracked texts
   Future<void> start() async {
