@@ -39,7 +39,7 @@ class _DailyTrackerHistoryListViewState
     trackerViewModel.historyListKey = _key;
 
     // Access the SettingsViewModel
-    final settingsViewModel = context.read<SettingsViewModel>();
+    final settingsViewModel = context.watch<SettingsViewModel>();
     final keywordsOnly = settingsViewModel.keywordsOnlyMode;
 
     // Formatters for only date and only time
