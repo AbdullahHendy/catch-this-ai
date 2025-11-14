@@ -84,7 +84,7 @@ class TrackingService {
   }
 
   // Start the foreground tracking service. Should init() and requestPermissions() first.
-  Future<void> start({String speechServiceType = 'asr'}) async {
+  Future<void> start(String speechServiceType) async {
     if (await FlutterForegroundTask.isRunningService) {
       await FlutterForegroundTask.restartService();
     } else {
@@ -131,7 +131,7 @@ class TrackingService {
       // Stop the current service
       await stop();
       // Start a new service with the new speech service type
-      await start(speechServiceType: newServiceType);
+      await start(newServiceType);
     }
   }
 
