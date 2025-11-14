@@ -32,13 +32,22 @@ class TrackerTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     _audioService = AudioStreamService();
-    // TODO: make service type configurable from settings: String serviceType should be sent from main isolate
-    // TODO: See: https://pub.dev/packages/flutter_foreground_task#hatched_chick-deepening
-    _speechService = _getSpeechService('asr');
+
+    // Get data saved when starting the service with speechServiceType using getData()
+    // TODO: Look into null safety stuff here
+    final String savedSpeechServiceType = await FlutterForegroundTask.getData(
+      key: TaskCommands.speechServiceType,
+    );
+    _speechService = _getSpeechService(savedSpeechServiceType.toLowerCase());
 
     // Initialize the speech service with the desired model
-    const modelName =
-        'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20';
+    final modelName = savedSpeechServiceType.toLowerCase() == 'asr'
+        ? 'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20'
+        : 'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01';
+    FlutterForegroundTask.updateService(
+      notificationText:
+          'Initializing ${savedSpeechServiceType.toUpperCase()} model...',
+    );
     await _speechService.init(modelName);
 
     // Start audio streaming
@@ -182,4 +191,5 @@ class TrackerTaskHandler extends TaskHandler {
 class TaskCommands {
   static const String exitApp = 'EXIT_APP';
   static const String debugHeartbeat = 'DEBUG: HEARTBEAT'; // unused for now
+  static const String speechServiceType = 'SPEECH_SERVICE_TYPE';
 }

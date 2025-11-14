@@ -84,14 +84,21 @@ class TrackingService {
   }
 
   // Start the foreground tracking service. Should init() and requestPermissions() first.
-  Future<void> start() async {
+  Future<void> start({String speechServiceType = 'asr'}) async {
     if (await FlutterForegroundTask.isRunningService) {
       await FlutterForegroundTask.restartService();
     } else {
+      // Save the desired speech service type to be retrieved in the TaskHandler
+      await FlutterForegroundTask.saveData(
+        key: TaskCommands.speechServiceType,
+        value: speechServiceType,
+      );
+
       // Notification buttons, texts are updated later in the TrackerTaskHandler
       await FlutterForegroundTask.startService(
         serviceId: 256,
         notificationTitle: 'Catching This AI',
+        serviceTypes: [ForegroundServiceTypes.microphone],
         notificationText: '',
         notificationIcon: null,
         notificationButtons: const [],
@@ -111,6 +118,22 @@ class TrackingService {
 
   // Useful getter to check if the foreground tracking service is running
   Future<bool> get isRunning => FlutterForegroundTask.isRunningService;
+
+  // useful function to switch speech service type on the fly
+  Future<void> switchSpeechServiceType(String newServiceType) async {
+    // Save the new speech service type to be retrieved in the TaskHandler
+    await FlutterForegroundTask.saveData(
+      key: TaskCommands.speechServiceType,
+      value: newServiceType,
+    );
+
+    if (await isRunning) {
+      // Stop the current service
+      await stop();
+      // Start a new service with the new speech service type
+      await start(speechServiceType: newServiceType);
+    }
+  }
 
   // ------------- Service Callbacks -------------
 
