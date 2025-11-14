@@ -21,14 +21,14 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Home page keeps track of counts of keyword daily
     * Apps runns in the background
     * Included Stats Page
+    * Included Settings Page (Choose ASR vs KWS, display options, clear database, etc.)
 
 * **TODO**
     * Verify if the [current behavior](#current-behavior) is the desired one
     * UI/UX needs improvement
-    * Missing Settings page
-    * Add option to select **ASR** or **KWS**, clear database, along with other settings (Settings Page)
     * See TODOs in files
     * Cannot run in linux because of `recorder`, see `pubspec.yaml`
+    * Think about trimming database box sizes after certain limit to prevent infinite growth (Do we rly need really old data?)
 
 * **TO DEVELOP**
     * Download assets using `./scripts/setup_assets.sh` or equivalent ways of running the bash script.
