@@ -36,7 +36,10 @@ class StatsViewModel extends ChangeNotifier {
   final TrackingRepository _repo;
 
   // Subscribe to the tracked texts stream to be able to dispose it later
-  StreamSubscription<TrackedText>? _sub;
+  StreamSubscription<TrackedText>? _trackedTextSub;
+
+  // Subscription to the clear stream to handle data clearing
+  StreamSubscription<void>? _clearSub;
 
   // Timer to check for day, week, month changes
   Timer? _changeCheckTimer;
@@ -106,8 +109,15 @@ class StatsViewModel extends ChangeNotifier {
     notifyListeners();
 
     // Subscribe to the tracked texts stream
-    _sub = _repo.stream.listen((trackedTextUTC) {
+    _trackedTextSub = _repo.trackedTextStream.listen((trackedTextUTC) {
       _onTrackedTextReceived(trackedTextUTC);
+    });
+
+    // Subscribe to the clear stream to handle data clearing
+    _clearSub = _repo.clearStream.listen((_) {
+      // Received clear signal, means data has been cleared, just re-load everything
+      _init();
+      notifyListeners();
     });
 
     // Timer to check for changes every minute
@@ -138,7 +148,8 @@ class StatsViewModel extends ChangeNotifier {
   Future<void> stop() async {
     if (!_isRunning) return;
 
-    await _sub?.cancel();
+    await _trackedTextSub?.cancel();
+    await _clearSub?.cancel();
     _isRunning = false;
     _changeCheckTimer?.cancel();
     notifyListeners();
@@ -146,7 +157,8 @@ class StatsViewModel extends ChangeNotifier {
 
   @override
   Future<void> dispose() async {
-    await _sub?.cancel();
+    await _trackedTextSub?.cancel();
+    await _clearSub?.cancel();
     _changeCheckTimer?.cancel();
     _isRunning = false;
     super.dispose();
@@ -357,7 +369,9 @@ class StatsViewModel extends ChangeNotifier {
 
   // Helpers for updating last7DaysTextsMap and last30DaysTextsMap
   void _loadRecentDaysTextsMaps() {
-    // TODO: app wide option should determine whether to pad empty days or not, which should also affect the UI styling of the charts
+    // TODO: Settings Page should determine whether to pad empty days or not, which should also affect the UI styling of the charts
+    // In case of not padding empty days, the chart will display last X days with data regardless of if they are consecutive or not (could be really old).
+    // If using non-padded mode, the chart's X axis labels should also reflect the actual dates of the data points not just weekday names.
     final bool padEmptyDays = true;
     _last7DaysTextsMap = _repo.getRecentLocalDaysTextsMap(
       _currentDay,

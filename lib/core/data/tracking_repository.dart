@@ -18,11 +18,18 @@ class TrackingRepository {
 
   // Stream controller to send TrackedText objects to listeners
   // Broadcast stream to allow possible multiple listeners to subscribe
-  final _controller = StreamController<TrackedText>.broadcast();
+  final _trackedTextController = StreamController<TrackedText>.broadcast();
+
+  // Stream controller to send 'clear' signals to listeners indicating that it's clearing tracking data
+  final _clearController = StreamController<void>.broadcast();
 
   // Getter for the tracked text stream to allow listeners to subscribe and do something like:
   // trackingRepository.stream.listen((trackedText) { ... });
-  Stream<TrackedText> get stream => _controller.stream;
+  Stream<TrackedText> get trackedTextStream => _trackedTextController.stream;
+
+  // Getter for the clear signal stream to allow listeners to subscribe and do something like:
+  // trackingRepository.clearStream.listen((_) { ... });
+  Stream<void> get clearStream => _clearController.stream;
 
   // Cached TrackedTexts from the local storage
   // TODO: think about maybe only caching texts for a limited time period if memory becomes an issue
@@ -80,7 +87,8 @@ class TrackingRepository {
   // Dispose the repository (close streams, cleanup service)
   Future<void> dispose() async {
     await _trackingService.dispose();
-    await _controller.close();
+    await _trackedTextController.close();
+    await _clearController.close();
     _cachedTexts.clear();
     _textsByLocalDayMap.clear();
     _isInitialized = false;
@@ -196,7 +204,7 @@ class TrackingRepository {
     _textsByLocalDayMap.putIfAbsent(localDayKey, () => []).add(textUTC);
 
     // Broadcast the new text
-    _controller.add(textUTC);
+    _trackedTextController.add(textUTC);
   }
 
   // Group cached texts by day
@@ -303,6 +311,8 @@ class TrackingRepository {
     // Also clear cached texts and grouped map
     _cachedTexts.clear();
     _textsByLocalDayMap.clear();
+    // Notify listeners about the clear action
+    _clearController.add(null);
   }
 
   // Clear all settings

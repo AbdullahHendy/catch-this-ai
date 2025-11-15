@@ -49,7 +49,8 @@ class SettingsViewModel extends ChangeNotifier {
 
   Future<void> clearSettings() async {
     await _repo.clearSettings();
-    _keywordsOnlyMode = false;
+    _currentServiceType = _repo.getServiceType();
+    _keywordsOnlyMode = _repo.getKeywordsOnlyMode();
     notifyListeners();
   }
 }
