@@ -119,7 +119,7 @@ class TrackingService {
   // Useful getter to check if the foreground tracking service is running
   Future<bool> get isRunning => FlutterForegroundTask.isRunningService;
 
-  // useful function to switch speech service type on the fly
+  // Useful function to switch speech service type on the fly
   Future<void> switchSpeechServiceType(String newServiceType) async {
     // Save the new speech service type to be retrieved in the TaskHandler
     await FlutterForegroundTask.saveData(

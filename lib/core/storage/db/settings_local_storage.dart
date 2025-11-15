@@ -8,7 +8,7 @@ class SettingsLocalStorage {
   late Box _settingsBox;
 
   // Keys for settings
-  static const String keySpeechServiceType = 'speech_service_type';
+  static const String speechServiceType = 'speech_service_type';
   static const String keywordsOnlyMode = 'keywords_only_mode';
   static const String padEmptyDaysInCharts = 'pad_empty_days_in_charts';
 
@@ -23,11 +23,11 @@ class SettingsLocalStorage {
 
   // Setter and getter for speech service type
   Future<void> setSpeechServiceType(String serviceType) async {
-    await _settingsBox.put(keySpeechServiceType, serviceType);
+    await _settingsBox.put(speechServiceType, serviceType);
   }
 
   String getSpeechServiceType() {
-    return _settingsBox.get(keySpeechServiceType, defaultValue: 'asr');
+    return _settingsBox.get(speechServiceType, defaultValue: 'asr');
   }
 
   // Setter and getter for keywords only mode

@@ -146,7 +146,7 @@ class StatsChart extends StatelessWidget {
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           // only for 30d view and length of selected data is more than 15 show left titles
-          // The second condition if for the case when pad empty days is false causing (possible) less than 30 days to be shown
+          // The second condition is for the case when pad empty days is false causing (possible) less than 30 days to be shown
           // It's then fine to stick with the same style as 7d view
           showTitles:
               statsState.selectedChartTimeFrame == ChartTimeFrame.month &&

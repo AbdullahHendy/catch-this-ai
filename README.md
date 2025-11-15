@@ -19,7 +19,7 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Spotted "texts" are published as the [`TrackedText`](./lib/core/domain/tracked_text.dart) in the form {String text, List<String> keywords, DateTime timestamp} and saved in the [`Hive`](./lib/core/storage/db/db_manager.dart) database
     * In the case of [**KWS**](./lib/core/services/speech/kws/sherpa_kws_service.dart), `keywords` of **TrackedText** is a list with single element, the same as, `text`
     * Home page keeps track of counts of keyword daily
-    * Apps runns in the background
+    * Apps runs in the background
     * Included Stats Page
     * Included Settings Page (Choose ASR vs KWS, display options, clear database, etc.)
 
