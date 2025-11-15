@@ -10,6 +10,7 @@ class SettingsLocalStorage {
   // Keys for settings
   static const String keySpeechServiceType = 'speech_service_type';
   static const String keywordsOnlyMode = 'keywords_only_mode';
+  static const String padEmptyDaysInCharts = 'pad_empty_days_in_charts';
 
   SettingsLocalStorage(this._dbManager);
 
@@ -36,6 +37,15 @@ class SettingsLocalStorage {
 
   bool getKeywordsOnlyMode() {
     return _settingsBox.get(keywordsOnlyMode, defaultValue: false);
+  }
+
+  // Setter and getter for pad empty days in charts
+  Future<void> setPadEmptyDaysInCharts(bool pad) async {
+    await _settingsBox.put(padEmptyDaysInCharts, pad);
+  }
+
+  bool getPadEmptyDaysInCharts() {
+    return _settingsBox.get(padEmptyDaysInCharts, defaultValue: true);
   }
 
   // Clear all settings

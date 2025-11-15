@@ -64,6 +64,17 @@ class SettingsPage extends StatelessWidget {
                     : (val) => viewModel.updateKeywordsOnlyMode(val),
                 activeThumbColor: theme.primaryColor,
               ),
+
+              SwitchListTile(
+                title: const Text('Pad Empty Days'),
+                subtitle: const Text(
+                  'Show days with zero activity in stats charts',
+                  style: TextStyle(fontSize: 12),
+                ),
+                value: viewModel.padEmptyDaysInCharts,
+                onChanged: (val) => viewModel.updatePadEmptyDaysInCharts(val),
+                activeThumbColor: theme.primaryColor,
+              ),
             ],
           ),
 

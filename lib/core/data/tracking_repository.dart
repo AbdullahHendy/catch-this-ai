@@ -312,6 +312,16 @@ class TrackingRepository {
     return _settingsLocalStorage.getKeywordsOnlyMode();
   }
 
+  // Set pad empty days in charts
+  Future<void> setPadEmptyDaysInCharts(bool pad) async {
+    await _settingsLocalStorage.setPadEmptyDaysInCharts(pad);
+  }
+
+  // Get pad empty days in charts
+  bool getPadEmptyDaysInCharts() {
+    return _settingsLocalStorage.getPadEmptyDaysInCharts();
+  }
+
   // Clear all tracking data
   Future<void> clearTrackingData() async {
     await _trackingLocalStorage.clearTrackedTexts();

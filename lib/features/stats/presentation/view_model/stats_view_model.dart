@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:catch_this_ai/core/data/tracking_repository.dart';
 import 'package:catch_this_ai/core/domain/tracked_text.dart';
+import 'package:catch_this_ai/features/settings/presentation/view_model/settings_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:catch_this_ai/core/utils/time_utils.dart';
 
@@ -64,6 +65,7 @@ class StatsViewModel extends ChangeNotifier {
   int _monthChangePercentage = 0;
 
   ChartTimeFrame _selectedChartTimeFrame = ChartTimeFrame.week;
+  bool _padEmptyDaysInCharts = true;
 
   Map<DateTime, List<TrackedText>> _last7DaysTextsMap = {};
   Map<DateTime, List<TrackedText>> _last30DaysTextsMap = {};
@@ -86,6 +88,7 @@ class StatsViewModel extends ChangeNotifier {
   int get monthChangePercentage => _monthChangePercentage;
 
   ChartTimeFrame get selectedChartTimeFrame => _selectedChartTimeFrame;
+  bool get padEmptyDaysInCharts => _padEmptyDaysInCharts;
   List<ChartTimeFrame> get chartTimeFrames => ChartTimeFrame.values;
 
   Map<DateTime, List<TrackedText>> get last7DaysTextsMap => _last7DaysTextsMap;
@@ -162,6 +165,19 @@ class StatsViewModel extends ChangeNotifier {
     _changeCheckTimer?.cancel();
     _isRunning = false;
     super.dispose();
+  }
+
+  // Update stats view model internal states from SettingsViewModel
+  void updateFromSettings(SettingsViewModel settings) {
+    // Update pad empty days setting
+    if (settings.padEmptyDaysInCharts == _padEmptyDaysInCharts) return;
+    _padEmptyDaysInCharts = settings.padEmptyDaysInCharts;
+
+    // Reload recent days texts maps and counts maps with new padding setting
+    _loadRecentDaysTextsMaps();
+    _loadRecentDaysKeywordsCountsMaps();
+
+    notifyListeners();
   }
 
   // Callback when a tracked text is received from the foreground task
@@ -369,19 +385,15 @@ class StatsViewModel extends ChangeNotifier {
 
   // Helpers for updating last7DaysTextsMap and last30DaysTextsMap
   void _loadRecentDaysTextsMaps() {
-    // TODO: Settings Page should determine whether to pad empty days or not, which should also affect the UI styling of the charts
-    // In case of not padding empty days, the chart will display last X days with data regardless of if they are consecutive or not (could be really old).
-    // If using non-padded mode, the chart's X axis labels should also reflect the actual dates of the data points not just weekday names.
-    final bool padEmptyDays = true;
     _last7DaysTextsMap = _repo.getRecentLocalDaysTextsMap(
       _currentDay,
       7,
-      padEmptyDays,
+      _padEmptyDaysInCharts,
     );
     _last30DaysTextsMap = _repo.getRecentLocalDaysTextsMap(
       _currentDay,
       30,
-      padEmptyDays,
+      _padEmptyDaysInCharts,
     );
   }
 
@@ -434,6 +446,9 @@ class StatsViewModel extends ChangeNotifier {
 
   // Helper to initialize all states
   void _init() {
+    // Load padEmptyDaysInCharts setting from repository, needed for initial loading of charts maps
+    _padEmptyDaysInCharts = _repo.getPadEmptyDaysInCharts();
+
     // Load histories to update initial states
     _loadHistory();
     _loadLastHistoryCounts();

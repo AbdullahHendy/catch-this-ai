@@ -29,6 +29,7 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * See TODOs in files
     * Cannot run in linux because of `recorder`, see `pubspec.yaml`
     * Think about trimming database box sizes after certain limit to prevent infinite growth (Do we rly need really old data?)
+    * Padding values, spacing in charts, etc are hardcoded numbers, shouldn't be like that
 
 * **TO DEVELOP**
     * Download assets using `./scripts/setup_assets.sh` or equivalent ways of running the bash script.

@@ -38,8 +38,10 @@ class MyApp extends StatelessWidget {
               create: (_) =>
                   DailyTrackerViewModel(deps.trackingRepository)..start(),
             ),
-            ChangeNotifierProvider<StatsViewModel>(
+            ChangeNotifierProxyProvider<SettingsViewModel, StatsViewModel>(
               create: (_) => StatsViewModel(deps.trackingRepository)..start(),
+              update: (_, settingsViewModel, statsViewModel) =>
+                  statsViewModel!..updateFromSettings(settingsViewModel),
             ),
           ],
 
