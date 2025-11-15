@@ -19,16 +19,17 @@ Tired of hearing about 'AI' every two seconds? See how many times you've survive
     * Spotted "texts" are published as the [`TrackedText`](./lib/core/domain/tracked_text.dart) in the form {String text, List<String> keywords, DateTime timestamp} and saved in the [`Hive`](./lib/core/storage/db/db_manager.dart) database
     * In the case of [**KWS**](./lib/core/services/speech/kws/sherpa_kws_service.dart), `keywords` of **TrackedText** is a list with single element, the same as, `text`
     * Home page keeps track of counts of keyword daily
-    * Apps runns in the background
+    * Apps runs in the background
     * Included Stats Page
+    * Included Settings Page (Choose ASR vs KWS, display options, clear database, etc.)
 
 * **TODO**
     * Verify if the [current behavior](#current-behavior) is the desired one
     * UI/UX needs improvement
-    * Missing Settings page
-    * Add option to select **ASR** or **KWS**, clear database, along with other settings (Settings Page)
     * See TODOs in files
     * Cannot run in linux because of `recorder`, see `pubspec.yaml`
+    * Think about trimming database box sizes after certain limit to prevent infinite growth (Do we rly need really old data?)
+    * Padding values, spacing in charts, etc are hardcoded numbers, shouldn't be like that
 
 * **TO DEVELOP**
     * Download assets using `./scripts/setup_assets.sh` or equivalent ways of running the bash script.

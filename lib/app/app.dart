@@ -2,6 +2,7 @@ import 'package:catch_this_ai/app/di/app_initializer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:catch_this_ai/app/home_page.dart';
+import 'package:catch_this_ai/features/settings/presentation/view_model/settings_view_model.dart';
 import 'package:catch_this_ai/features/daily_tracker/presentation/view_model/daily_tracker_view_model.dart';
 import 'package:catch_this_ai/features/stats/presentation/view_model/stats_view_model.dart';
 import 'package:catch_this_ai/core/theme/app_theme.dart';
@@ -29,12 +30,18 @@ class MyApp extends StatelessWidget {
 
         return MultiProvider(
           providers: [
+            ChangeNotifierProvider<SettingsViewModel>(
+              create: (_) =>
+                  SettingsViewModel(deps.trackingRepository)..start(),
+            ),
             ChangeNotifierProvider<DailyTrackerViewModel>(
               create: (_) =>
                   DailyTrackerViewModel(deps.trackingRepository)..start(),
             ),
-            ChangeNotifierProvider<StatsViewModel>(
+            ChangeNotifierProxyProvider<SettingsViewModel, StatsViewModel>(
               create: (_) => StatsViewModel(deps.trackingRepository)..start(),
+              update: (_, settingsViewModel, statsViewModel) =>
+                  statsViewModel!..updateFromSettings(settingsViewModel),
             ),
           ],
 

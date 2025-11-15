@@ -1,6 +1,7 @@
 import 'package:catch_this_ai/core/data/tracking_repository.dart';
 import 'package:catch_this_ai/core/services/foreground/tracking/tracking_service.dart';
 import 'package:catch_this_ai/core/storage/db/db_manager.dart';
+import 'package:catch_this_ai/core/storage/db/settings_local_storage.dart';
 import 'package:catch_this_ai/core/storage/db/tracking_local_storage.dart';
 import 'package:flutter/material.dart';
 
@@ -28,10 +29,12 @@ class AppInitializer {
     // Initialize the tracking repository dependencies
     final trackingService = TrackingService.instance;
     final trackingLocalStorage = TrackingLocalStorage(DBManager.instance);
+    final settingsLocalStorage = SettingsLocalStorage(DBManager.instance);
 
     // Create the tracking data broker/repository
     final trackingRepository = TrackingRepository(
-      localStorage: trackingLocalStorage,
+      trackingLocalStorage: trackingLocalStorage,
+      settingsLocalStorage: settingsLocalStorage,
       trackingService: trackingService,
     );
 

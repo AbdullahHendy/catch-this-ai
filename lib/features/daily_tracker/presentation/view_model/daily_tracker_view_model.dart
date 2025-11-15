@@ -10,7 +10,10 @@ class DailyTrackerViewModel extends ChangeNotifier {
   final TrackingRepository _repo;
 
   // Subscribe to the tracked texts stream to be able to dispose it later
-  StreamSubscription<TrackedText>? _sub;
+  StreamSubscription<TrackedText>? _trackedTextSub;
+
+  // Subscription to the clear stream to handle data clearing
+  StreamSubscription<void>? _clearSub;
 
   // Day check timer and tracking variables
   Timer? _dayCheckTimer;
@@ -40,8 +43,15 @@ class DailyTrackerViewModel extends ChangeNotifier {
     notifyListeners();
 
     // Subscribe to the tracked texts stream
-    _sub = _repo.stream.listen((trackedTextUTC) {
+    _trackedTextSub = _repo.trackedTextStream.listen((trackedTextUTC) {
       _onTrackedTextReceived(trackedTextUTC);
+    });
+
+    // Subscribe to the clear stream to handle data clearing
+    _clearSub = _repo.clearStream.listen((_) {
+      // Received clear signal, means data has been cleared, just re-load everything
+      _loadTodayHistory();
+      notifyListeners();
     });
 
     // Timer to check for day changes every minute
@@ -62,7 +72,8 @@ class DailyTrackerViewModel extends ChangeNotifier {
   Future<void> stop() async {
     if (!_isRunning) return;
 
-    await _sub?.cancel();
+    await _trackedTextSub?.cancel();
+    await _clearSub?.cancel();
     _isRunning = false;
     _dayCheckTimer?.cancel();
     notifyListeners();
@@ -70,7 +81,8 @@ class DailyTrackerViewModel extends ChangeNotifier {
 
   @override
   Future<void> dispose() async {
-    await _sub?.cancel();
+    await _trackedTextSub?.cancel();
+    await _clearSub?.cancel();
     _dayCheckTimer?.cancel();
     _isRunning = false;
     super.dispose();

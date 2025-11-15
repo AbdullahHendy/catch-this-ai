@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:catch_this_ai/core/domain/tracked_text.dart';
 import 'package:catch_this_ai/core/services/foreground/tracking/tracking_service.dart';
+import 'package:catch_this_ai/core/storage/db/settings_local_storage.dart';
 import 'package:catch_this_ai/core/storage/db/tracking_local_storage.dart';
 import 'package:flutter/foundation.dart';
 
@@ -8,18 +9,27 @@ import 'package:flutter/foundation.dart';
 ///   * Listens to tracked texts coming from the foreground task
 ///   * Persists them into the local storage
 ///   * Streams new tracked texts to listeners (e.g. features ViewModels)
+///   * Manages settings related to tracking
 class TrackingRepository {
-  // Dependencies: local storage and tracking service
-  final TrackingLocalStorage _localStorage;
+  // Dependencies: local storages and tracking service
+  final TrackingLocalStorage _trackingLocalStorage;
+  final SettingsLocalStorage _settingsLocalStorage;
   final TrackingService _trackingService;
 
   // Stream controller to send TrackedText objects to listeners
   // Broadcast stream to allow possible multiple listeners to subscribe
-  final _controller = StreamController<TrackedText>.broadcast();
+  final _trackedTextController = StreamController<TrackedText>.broadcast();
+
+  // Stream controller to send 'clear' signals to listeners indicating that it's clearing tracking data
+  final _clearController = StreamController<void>.broadcast();
 
   // Getter for the tracked text stream to allow listeners to subscribe and do something like:
   // trackingRepository.stream.listen((trackedText) { ... });
-  Stream<TrackedText> get stream => _controller.stream;
+  Stream<TrackedText> get trackedTextStream => _trackedTextController.stream;
+
+  // Getter for the clear signal stream to allow listeners to subscribe and do something like:
+  // trackingRepository.clearStream.listen((_) { ... });
+  Stream<void> get clearStream => _clearController.stream;
 
   // Cached TrackedTexts from the local storage
   // TODO: think about maybe only caching texts for a limited time period if memory becomes an issue
@@ -32,16 +42,19 @@ class TrackingRepository {
   bool _isInitialized = false;
 
   TrackingRepository({
-    required TrackingLocalStorage localStorage,
+    required TrackingLocalStorage trackingLocalStorage,
+    required SettingsLocalStorage settingsLocalStorage,
     required TrackingService trackingService,
-  }) : _localStorage = localStorage,
+  }) : _trackingLocalStorage = trackingLocalStorage,
+       _settingsLocalStorage = settingsLocalStorage,
        _trackingService = trackingService;
 
   Future<void> init() async {
     if (_isInitialized) return;
 
-    // Initialize local storage
-    await _localStorage.init();
+    // Initialize local storages
+    await _settingsLocalStorage.init();
+    await _trackingLocalStorage.init();
 
     // Request necessary permissions then initialize the tracking service
     await _trackingService.requestPermissions();
@@ -51,7 +64,7 @@ class TrackingRepository {
     _trackingService.registerTrackedTextCallback(_onTrackedTextReceived);
 
     // Load texts from local storage into cache (UTC)
-    _cachedTexts = _localStorage.getAllTrackedTexts();
+    _cachedTexts = _trackingLocalStorage.getAllTrackedTexts();
 
     // Group cached texts by day for easier querying later
     _textsByLocalDayMap = _groupTextsByLocalDay(_cachedTexts);
@@ -61,7 +74,9 @@ class TrackingRepository {
 
   // Start foreground tracking service
   Future<void> start() async {
-    await _trackingService.start();
+    // Get the saved speech service type from settings storage
+    final speechServiceType = _settingsLocalStorage.getSpeechServiceType();
+    await _trackingService.start(speechServiceType);
   }
 
   // Stop foreground tracking service
@@ -72,11 +87,14 @@ class TrackingRepository {
   // Dispose the repository (close streams, cleanup service)
   Future<void> dispose() async {
     await _trackingService.dispose();
-    await _controller.close();
+    await _trackedTextController.close();
+    await _clearController.close();
     _cachedTexts.clear();
     _textsByLocalDayMap.clear();
     _isInitialized = false;
   }
+
+  // ------------- Main Tracking -------------
 
   // All getLocalXTexts method return a list of TrackedText objects within the requested local time period,
   // but the text timestamps are still in UTC for consistency.
@@ -171,7 +189,7 @@ class TrackingRepository {
     }
 
     // Persist the text into local storage and broadcast it through the stream to listeners
-    await _localStorage.addTrackedText(textUTC);
+    await _trackingLocalStorage.addTrackedText(textUTC);
 
     // Update cached texts
     _cachedTexts.add(textUTC);
@@ -186,7 +204,7 @@ class TrackingRepository {
     _textsByLocalDayMap.putIfAbsent(localDayKey, () => []).add(textUTC);
 
     // Broadcast the new text
-    _controller.add(textUTC);
+    _trackedTextController.add(textUTC);
   }
 
   // Group cached texts by day
@@ -241,10 +259,11 @@ class TrackingRepository {
 
     if (padEmptyDays) {
       // Get a list of the expected n days ending at reference day
-      final expectedDays = List<DateTime>.generate(
-        n,
-        (i) => refLocalDayKey.subtract(Duration(days: n - 1 - i)),
-      );
+      final expectedDays = List<DateTime>.generate(n, (i) {
+        final day = refLocalDayKey.subtract(Duration(days: n - 1 - i));
+        // Normalize to midnight local time in case of misalignment e.g. daylight saving time changes
+        return DateTime(day.year, day.month, day.day);
+      });
 
       // Ensure all expected days are present in the result map
       for (var day in expectedDays) {
@@ -256,9 +275,65 @@ class TrackingRepository {
       final paddedResult = Map.fromEntries(
         sortedKeys.map((key) => MapEntry(key, result[key]!)),
       );
-      return paddedResult;
+
+      // After padding, take the last n entries again in case padding added extra days
+      final paddedResultN = Map.fromEntries(
+        paddedResult.entries.toList().reversed.take(n).toList().reversed,
+      );
+
+      return paddedResultN;
     }
 
     return result;
+  }
+
+  // ------------- Settings -------------
+
+  // Switch speech service type
+  Future<void> switchSpeechServiceType(String newServiceType) async {
+    // Save the new speech service type to settings storage
+    await _settingsLocalStorage.setSpeechServiceType(newServiceType);
+
+    await _trackingService.switchSpeechServiceType(newServiceType);
+  }
+
+  // Get current speech service type
+  String getServiceType() {
+    return _settingsLocalStorage.getSpeechServiceType();
+  }
+
+  // Set keywords only mode
+  Future<void> setKeywordsOnlyMode(bool isEnabled) async {
+    await _settingsLocalStorage.setKeywordsOnlyMode(isEnabled);
+  }
+
+  // Get keywords only mode
+  bool getKeywordsOnlyMode() {
+    return _settingsLocalStorage.getKeywordsOnlyMode();
+  }
+
+  // Set pad empty days in charts
+  Future<void> setPadEmptyDaysInCharts(bool pad) async {
+    await _settingsLocalStorage.setPadEmptyDaysInCharts(pad);
+  }
+
+  // Get pad empty days in charts
+  bool getPadEmptyDaysInCharts() {
+    return _settingsLocalStorage.getPadEmptyDaysInCharts();
+  }
+
+  // Clear all tracking data
+  Future<void> clearTrackingData() async {
+    await _trackingLocalStorage.clearTrackedTexts();
+    // Also clear cached texts and grouped map
+    _cachedTexts.clear();
+    _textsByLocalDayMap.clear();
+    // Notify listeners about the clear action
+    _clearController.add(null);
+  }
+
+  // Clear all settings
+  Future<void> clearSettings() async {
+    await _settingsLocalStorage.clearSettings();
   }
 }

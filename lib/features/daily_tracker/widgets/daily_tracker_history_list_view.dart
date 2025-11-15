@@ -1,3 +1,4 @@
+import 'package:catch_this_ai/features/settings/presentation/view_model/settings_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,10 @@ class _DailyTrackerHistoryListViewState
     final trackerViewModel = context.watch<DailyTrackerViewModel>();
     trackerViewModel.historyListKey = _key;
 
+    // Access the SettingsViewModel
+    final settingsViewModel = context.watch<SettingsViewModel>();
+    final keywordsOnly = settingsViewModel.keywordsOnlyMode;
+
     // Formatters for only date and only time
     final dateFormatter = DateFormat.yMMMd();
     final timeFormatter = DateFormat.jm();
@@ -64,10 +69,20 @@ class _DailyTrackerHistoryListViewState
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    DailyTrackerTextHighlighter(
-                      text: textItem.text,
-                      keywords: textItem.keywords,
-                    ),
+                    if (keywordsOnly)
+                      // Keywords-only view
+                      Text(
+                        textItem.keywords.join('  -  '),
+                        style: textTheme.bodyLarge!.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      )
+                    else
+                      DailyTrackerTextHighlighter(
+                        text: textItem.text,
+                        keywords: textItem.keywords,
+                      ),
                     const SizedBox(height: 0),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
