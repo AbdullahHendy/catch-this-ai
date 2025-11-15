@@ -259,10 +259,11 @@ class TrackingRepository {
 
     if (padEmptyDays) {
       // Get a list of the expected n days ending at reference day
-      final expectedDays = List<DateTime>.generate(
-        n,
-        (i) => refLocalDayKey.subtract(Duration(days: n - 1 - i)),
-      );
+      final expectedDays = List<DateTime>.generate(n, (i) {
+        final day = refLocalDayKey.subtract(Duration(days: n - 1 - i));
+        // Normalize to midnight local time in case of misalignment e.g. daylight saving time changes
+        return DateTime(day.year, day.month, day.day);
+      });
 
       // Ensure all expected days are present in the result map
       for (var day in expectedDays) {
@@ -274,7 +275,13 @@ class TrackingRepository {
       final paddedResult = Map.fromEntries(
         sortedKeys.map((key) => MapEntry(key, result[key]!)),
       );
-      return paddedResult;
+
+      // After padding, take the last n entries again in case padding added extra days
+      final paddedResultN = Map.fromEntries(
+        paddedResult.entries.toList().reversed.take(n).toList().reversed,
+      );
+
+      return paddedResultN;
     }
 
     return result;
