@@ -18,10 +18,7 @@ enum SherpaModel {
   final String folderName;
   final String type; // 'asr' or 'kws' - helps map from settings
 
-  const SherpaModel({
-    required this.folderName,
-    required this.type,
-  });
+  const SherpaModel({required this.folderName, required this.type});
 
   // Helper getter for the full asset path
   String get assetPath => 'assets/$folderName';
@@ -86,10 +83,13 @@ Future<String> getKeywordsFilePath(SherpaModel model) async {
 // Get a list of raw keywords
 Future<List<String>> getRawKeywords(SherpaModel model) async {
   const fileName = 'keywords_raw.txt';
-  final rawKeywordsFilePath = await copyAssetFile('${model.assetPath}/$fileName');
+  final rawKeywordsFilePath = await copyAssetFile(
+    '${model.assetPath}/$fileName',
+  );
   final keywordsFile = File(rawKeywordsFilePath);
-  
-  if (!keywordsFile.existsSync()) return []; // Return empty list if file doesn't exist
+
+  // Return empty list if file doesn't exist
+  if (!await keywordsFile.exists()) return [];
 
   final content = await keywordsFile.readAsLines();
   // if the line ends with :<number>, remove that part. :<number> indicates the sensitivity score and is likely used with ASR models.
