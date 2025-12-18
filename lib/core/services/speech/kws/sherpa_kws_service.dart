@@ -24,25 +24,15 @@ class SherpaKwsService implements SpeechToTextService {
   @override
   Stream<TrackedText> get stream => _controller.stream;
 
-  // Available kws model names
-  static const List<String> availableModelNames = [
-    'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01',
-  ];
-
   // Initialize the Sherpa KWS model and load keywords
   @override
-  Future<void> init(String modelName) async {
+  Future<void> init(SherpaModel model) async {
     if (_isInitialized) return;
-    if (!availableModelNames.contains(modelName)) {
-      throw Exception(
-        'Model $modelName is not in the list of available KWS models.',
-      );
-    }
 
     // Sherpa ONNX stream and model initialization
     sherpa_onnx.initBindings();
-    final modelConfig = await getOnlineModelConfig(modelName: modelName);
-    final keywordsFilePath = await getKeywordsFilePath(modelName);
+    final modelConfig = await getOnlineModelConfig(model: model);
+    final keywordsFilePath = await getKeywordsFilePath(model);
     // Seems to be a fallback threshold value if not specified in keywords file
     const keywordsThreshold = 0.1;
     final kwsConfig = sherpa_onnx.KeywordSpotterConfig(

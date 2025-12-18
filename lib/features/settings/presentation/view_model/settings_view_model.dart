@@ -1,4 +1,5 @@
 import 'package:catch_this_ai/core/data/tracking_repository.dart';
+import 'package:catch_this_ai/core/utils/sherpa_model_utils.dart';
 import 'package:flutter/foundation.dart';
 
 /// ViewModel to manage settings states and actions
@@ -6,14 +7,16 @@ class SettingsViewModel extends ChangeNotifier {
   final TrackingRepository _repo;
 
   // State variables
-  String _currentServiceType = 'asr';
+  String _currentServiceType = SherpaModel.asr.type;
   bool _keywordsOnlyMode = false;
   bool _padEmptyDaysInCharts = true;
+  List<String> _modelRawKeywords = [];
 
   // Getters for state variables
   bool get keywordsOnlyMode => _keywordsOnlyMode;
   String get currentServiceType => _currentServiceType;
   bool get padEmptyDaysInCharts => _padEmptyDaysInCharts;
+  List<String> get modelRawKeywords => _modelRawKeywords;
 
   SettingsViewModel(this._repo);
 
@@ -22,6 +25,9 @@ class SettingsViewModel extends ChangeNotifier {
     _currentServiceType = _repo.getServiceType();
     _keywordsOnlyMode = _repo.getKeywordsOnlyMode();
     _padEmptyDaysInCharts = _repo.getPadEmptyDaysInCharts();
+    _modelRawKeywords = await _repo.getModelRawKeywords(
+      SherpaModel.getSherpaModel(_currentServiceType),
+    );
 
     notifyListeners();
   }
@@ -32,6 +38,9 @@ class SettingsViewModel extends ChangeNotifier {
     _currentServiceType = newType;
 
     await _repo.switchSpeechServiceType(newType);
+    _modelRawKeywords = await _repo.getModelRawKeywords(
+      SherpaModel.getSherpaModel(newType),
+    );
     notifyListeners();
   }
 

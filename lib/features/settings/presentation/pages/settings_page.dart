@@ -1,3 +1,4 @@
+import 'package:catch_this_ai/core/utils/sherpa_model_utils.dart';
 import 'package:catch_this_ai/features/settings/presentation/view_model/settings_view_model.dart';
 import 'package:catch_this_ai/features/settings/widgets/settings_service_selector_card.dart';
 import 'package:catch_this_ai/features/settings/widgets/settings_group_card.dart';
@@ -12,7 +13,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<SettingsViewModel>();
     final speechServiceType = viewModel.currentServiceType;
-    final isKwsMode = speechServiceType == 'kws';
+    final isKwsMode = speechServiceType == SherpaModel.kws.type;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -82,9 +83,23 @@ class SettingsPage extends StatelessWidget {
           _buildSectionHeader(theme, 'Data Management'),
           const SizedBox(height: 8),
 
-          // Data Management Card, clear tracking data only for now
+          // Data Management Card
           SettingsGroupCard(
             children: [
+              // View Keywords Option
+              ListTile(
+                leading: const Icon(Icons.text_snippet, color: Colors.black),
+                title: const Text(
+                  'View Tracked Keywords',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text('See all keywords being tracked'),
+                onTap: () => _showTrackedKeywords(context, viewModel),
+              ),
+              // Clear Tracking Data Option
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
                 title: const Text(
@@ -115,6 +130,47 @@ class SettingsPage extends StatelessWidget {
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
         ),
+      ),
+    );
+  }
+
+  // Helper to show tracked keywords dialog
+  Future<void> _showTrackedKeywords(
+    BuildContext context,
+    SettingsViewModel viewModel,
+  ) async {
+    final modelKeywords = viewModel.modelRawKeywords;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Tracked Keywords (${viewModel.currentServiceType.toUpperCase()})',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: modelKeywords.isEmpty
+              ? const Text('No keywords found for this model.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: modelKeywords.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.label_important_outline),
+                      title: Text(modelKeywords[index]),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

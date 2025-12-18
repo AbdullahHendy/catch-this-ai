@@ -30,27 +30,17 @@ class SherpaAsrService implements SpeechToTextService {
   // Map to store regex patterns for keywords for quick access
   final Map<String, RegExp> _keywordPatterns = {};
 
-  // Available ASR model names
-  static const List<String> availableModelNames = [
-    'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20',
-  ];
-
   // Initialize the Sherpa ASR model and load hotwords
   @override
-  Future<void> init(String modelName) async {
+  Future<void> init(SherpaModel model) async {
     if (_isInitialized) return;
-    if (!availableModelNames.contains(modelName)) {
-      throw Exception(
-        'Model $modelName is not in the list of available ASR models.',
-      );
-    }
 
     // Sherpa ONNX stream and model initialization
     sherpa_onnx.initBindings();
-    final modelConfig = await getOnlineModelConfig(modelName: modelName);
-    final hotwordsFilePath = await getKeywordsFilePath(modelName);
+    final modelConfig = await getOnlineModelConfig(model: model);
+    final hotwordsFilePath = await getKeywordsFilePath(model);
     // List of the content of the hotwords file
-    _keywords = await getRawKeywords(modelName);
+    _keywords = await getRawKeywords(model);
 
     // Precompile regex patterns for all keywords
     for (final keyword in _keywords) {

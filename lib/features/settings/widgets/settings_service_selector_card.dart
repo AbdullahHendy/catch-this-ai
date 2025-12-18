@@ -1,3 +1,4 @@
+import 'package:catch_this_ai/core/utils/sherpa_model_utils.dart';
 import 'package:flutter/material.dart';
 
 /// A card-based selector for ASR vs KWS service types.
@@ -20,7 +21,7 @@ class SettingsServiceSelectorCard extends StatelessWidget {
           title: 'Transcription (ASR)',
           description:
               'Continuous speech recognition. Captures full sentences.',
-          value: 'asr',
+          value: SherpaModel.asr.type,
           icon: Icons.record_voice_over_rounded,
         ),
         const SizedBox(height: 12),
@@ -28,7 +29,7 @@ class SettingsServiceSelectorCard extends StatelessWidget {
           context,
           title: 'Keyword Spotting (KWS)',
           description: 'Efficiently listens for specific keywords only.',
-          value: 'kws',
+          value: SherpaModel.kws.type,
           icon: Icons.manage_search_rounded,
         ),
       ],

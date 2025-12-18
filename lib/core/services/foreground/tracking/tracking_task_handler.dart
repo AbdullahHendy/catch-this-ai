@@ -5,6 +5,7 @@ import 'package:catch_this_ai/core/services/audio/audio_stream_service.dart';
 import 'package:catch_this_ai/core/services/speech/kws/sherpa_kws_service.dart';
 import 'package:catch_this_ai/core/domain/tracked_text.dart';
 import 'package:catch_this_ai/core/services/speech/speech_to_text_service.dart';
+import 'package:catch_this_ai/core/utils/sherpa_model_utils.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:record/record.dart';
@@ -37,19 +38,19 @@ class TrackerTaskHandler extends TaskHandler {
     final String? savedSpeechServiceType = await FlutterForegroundTask.getData(
       key: TaskCommands.speechServiceType,
     );
-    _speechService = _getSpeechService(
-      savedSpeechServiceType?.toLowerCase() ?? 'asr',
-    );
 
     // Initialize the speech service with the desired model
-    final modelName = savedSpeechServiceType?.toLowerCase() == 'asr'
-        ? 'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20'
-        : 'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01';
+    final model = SherpaModel.getSherpaModel(
+      savedSpeechServiceType?.toLowerCase() ?? SherpaModel.asr.type,
+    );
+
+    _speechService = _getSpeechService(model);
+
     FlutterForegroundTask.updateService(
       notificationText:
           'Initializing ${savedSpeechServiceType?.toUpperCase() ?? 'ASR'} model...',
     );
-    await _speechService.init(modelName);
+    await _speechService.init(model);
 
     // Start audio streaming
     await _audioService.start();
@@ -138,16 +139,15 @@ class TrackerTaskHandler extends TaskHandler {
   }
 
   // helper to pick which speech service to use based on settings
-  SpeechToTextService _getSpeechService(String serviceType) {
-    switch (serviceType.toLowerCase()) {
-      case 'asr':
+  SpeechToTextService _getSpeechService(SherpaModel model) {
+    switch (model) {
+      case SherpaModel.asr:
         return SherpaAsrService();
 
-      case 'kws':
+      case SherpaModel.kws:
         return SherpaKwsService();
 
-      default:
-        throw Exception('Unknown speech service type: $serviceType');
+      // No need for default since SherpaModel getSherpaModel defaults to ASR if unknown
     }
   }
 

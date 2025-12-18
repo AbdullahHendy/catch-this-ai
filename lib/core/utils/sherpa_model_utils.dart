@@ -1,27 +1,50 @@
 import 'dart:io';
-
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa_onnx;
 import 'package:catch_this_ai/core/utils/file_utils.dart';
 
-// Models should be added to assets folder
-// Model should be added in `assets` in ../pubspec.yaml
+/// Enhanced Enum to manage Model Types and their paths
+// TODO: This assumes only one model per type (ASR/KWS). Will need to adjust if multiple models are supported.
+enum SherpaModel {
+  // Define the Enum cases with their directory names
+  kws(
+    folderName: 'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01',
+    type: 'kws',
+  ),
+  asr(
+    folderName: 'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20',
+    type: 'asr',
+  );
 
-// Available models constant array
-const sherpaModelNames = [
-  // https://k2-fsa.github.io/sherpa/onnx/kws/pretrained_models/index.html#sherpa-onnx-kws-zipformer-gigaspeech-3-3m-2024-01-01-english
-  'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01',
-  // https://k2-fsa.github.io/sherpa/onnx/pretrained_models/online-transducer/zipformer-transducer-models.html#csukuangfj-sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20-bilingual-chinese-english
-  'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20',
-];
+  final String folderName;
+  final String type; // 'asr' or 'kws' - helps map from settings
 
-// Load Sherpa ONNX online model configuration based on model name
+  const SherpaModel({
+    required this.folderName,
+    required this.type,
+  });
+
+  // Helper getter for the full asset path
+  String get assetPath => 'assets/$folderName';
+
+  // Static helper to get a model from the simple string saved in Settings ('asr' or 'kws')
+  static SherpaModel getSherpaModel(String serviceType) {
+    // Get the first matching model, or default to ASR
+    return SherpaModel.values.firstWhere(
+      (m) => m.type == serviceType.toLowerCase(),
+      orElse: () => SherpaModel.asr,
+    );
+  }
+}
+
+// Load Sherpa ONNX online model configuration based on the Enum SherpaModel
 Future<sherpa_onnx.OnlineModelConfig> getOnlineModelConfig({
-  required String modelName,
+  required SherpaModel model,
 }) async {
-  switch (modelName) {
-    case 'sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01':
-      final modelDir =
-          'assets/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01';
+  final modelDir = model.assetPath;
+
+  switch (model) {
+    // Assumes only one model per type
+    case SherpaModel.kws:
       return sherpa_onnx.OnlineModelConfig(
         transducer: sherpa_onnx.OnlineTransducerModelConfig(
           encoder: await copyAssetFile(
@@ -38,9 +61,7 @@ Future<sherpa_onnx.OnlineModelConfig> getOnlineModelConfig({
         modelType: 'zipformer2',
       );
 
-    case 'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20':
-      final modelDir =
-          'assets/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20';
+    case SherpaModel.asr:
       return sherpa_onnx.OnlineModelConfig(
         transducer: sherpa_onnx.OnlineTransducerModelConfig(
           encoder: await copyAssetFile(
@@ -54,33 +75,24 @@ Future<sherpa_onnx.OnlineModelConfig> getOnlineModelConfig({
         modelingUnit: 'cjkchar+bpe',
         bpeVocab: await copyAssetFile('$modelDir/bpe.vocab'),
       );
-
-    default:
-      throw ArgumentError('Unsupported model: $modelName');
   }
 }
 
-// Get device path for keywords file for a given model (keywords.txt in KWS models and keywords_raw.txt in ASR models)
-Future<String> getKeywordsFilePath(String modelName) async {
-  // If model name not in supported list, throw error
-  if (!sherpaModelNames.contains(modelName)) {
-    throw ArgumentError('Unsupported model: $modelName');
-  }
-  final modelDir = 'assets/$modelName';
-  return await copyAssetFile('$modelDir/keywords.txt');
+// Get device path for keywords file
+Future<String> getKeywordsFilePath(SherpaModel model) async {
+  return await copyAssetFile('${model.assetPath}/keywords.txt');
 }
 
-// Get a list of raw keywords for a given model
-Future<List<String>> getRawKeywords(String modelName) async {
-  // If model name not in supported list, throw error
-  if (!sherpaModelNames.contains(modelName)) {
-    throw ArgumentError('Unsupported model: $modelName');
-  }
-  final modelDir = 'assets/$modelName';
-  final rawKeywordsFilePath = await copyAssetFile('$modelDir/keywords_raw.txt');
+// Get a list of raw keywords
+Future<List<String>> getRawKeywords(SherpaModel model) async {
+  const fileName = 'keywords_raw.txt';
+  final rawKeywordsFilePath = await copyAssetFile('${model.assetPath}/$fileName');
   final keywordsFile = File(rawKeywordsFilePath);
+  
+  if (!keywordsFile.existsSync()) return []; // Return empty list if file doesn't exist
+
   final content = await keywordsFile.readAsLines();
-  // if the line ends with :<number>, remove that part
+  // if the line ends with :<number>, remove that part. :<number> indicates the sensitivity score and is likely used with ASR models.
   return content.where((line) => line.trim().isNotEmpty).map((line) {
     final parts = line.split(':');
     return parts[0].trim();
