@@ -1,7 +1,6 @@
-▁HI ▁GO O G LE :1
-▁HE Y ▁S I RI :1
-▁A LE X A :1
 ▁A I :2
 ▁A ▁I :2
 ▁MA CH IN E ▁LEARN ING :1
-▁CHA T ▁G P T :1.5
+▁CHA T ▁G P T :2
+▁A G ENT :1.5
+▁A G EN TIC :2
