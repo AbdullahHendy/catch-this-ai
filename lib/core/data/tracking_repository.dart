@@ -3,6 +3,7 @@ import 'package:catch_this_ai/core/domain/tracked_text.dart';
 import 'package:catch_this_ai/core/services/foreground/tracking/tracking_service.dart';
 import 'package:catch_this_ai/core/storage/db/settings_local_storage.dart';
 import 'package:catch_this_ai/core/storage/db/tracking_local_storage.dart';
+import 'package:catch_this_ai/core/utils/sherpa_model_utils.dart';
 import 'package:flutter/foundation.dart';
 
 /// Repository that connects the Foreground TrackingService and the local database.
@@ -335,5 +336,10 @@ class TrackingRepository {
   // Clear all settings
   Future<void> clearSettings() async {
     await _settingsLocalStorage.clearSettings();
+  }
+
+  // Get raw keywords for a SherpaModel model
+  Future<List<String>> getModelRawKeywords(SherpaModel model) async {
+    return await getRawKeywords(model);
   }
 }

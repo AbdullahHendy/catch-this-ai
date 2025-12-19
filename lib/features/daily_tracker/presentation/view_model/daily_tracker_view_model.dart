@@ -89,7 +89,7 @@ class DailyTrackerViewModel extends ChangeNotifier {
   }
 
   // Callback when a tracked text is received from the foreground task
-  Future<void> _onTrackedTextReceived(TrackedText TrackedTextUTC) async {
+  Future<void> _onTrackedTextReceived(TrackedText trackedTextUTC) async {
     final now = DateTime.now();
     // Guard for the case when first text of the day is detected before the timer resets the day
     if (!isSameDay(now, _currentDay)) {
@@ -98,9 +98,9 @@ class DailyTrackerViewModel extends ChangeNotifier {
 
     // Create a local tracked text for history list
     final trackedTextLocal = TrackedText(
-      TrackedTextUTC.text,
-      TrackedTextUTC.keywords,
-      TrackedTextUTC.timestamp.toLocal(),
+      trackedTextUTC.text,
+      trackedTextUTC.keywords,
+      trackedTextUTC.timestamp.toLocal(),
     );
 
     _dayTextHistory.insert(0, trackedTextLocal);
