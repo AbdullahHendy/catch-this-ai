@@ -48,7 +48,7 @@
 ---
 
 
-# For Developers
+## For Developers
 * **First**
     * Download assets using `./scripts/setup_assets.sh` or equivalent ways of running the bash script.
     * To update keywords, edit the main `.txt` files in [assets/](./assets/) then run `./scripts/setup_assets.sh`
