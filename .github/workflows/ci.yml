@@ -64,13 +64,6 @@ jobs:
       - name: 🏗 Build App Bundle
         run: flutter build appbundle --release
 
-      # Prepare artifacts for upload/release
-      - name: 📦 Prepare artifacts
-        run: |
-          mkdir -p artifacts
-          cp build/app/outputs/flutter-apk/*.apk artifacts/
-          cp build/app/outputs/bundle/release/app-release.aab artifacts/
-
       # ─────────────── ONLY ON TAGS ───────────────
       - name: 🏷️ Create or update Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -78,5 +71,7 @@ jobs:
         with:
           tag:       ${{ github.ref_name }}
           name:      Release ${{ github.ref_name }}
-          artifacts: artifacts/*
+          artifacts: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/app-release.aab
           token:     ${{ secrets.GITHUB_TOKEN }}
