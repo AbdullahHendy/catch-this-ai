@@ -4,8 +4,8 @@
 
 **Tired of hearing about 'AI' every two seconds? See how many times you've survived the AI overload!**
 
-[![Build](https://github.com/AbdullahHendy/catch-this-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdullahHendy/live-translation/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/AbdullahHendy/live-translation.svg)](https://github.com/AbdullahHendy/live-translation/blob/main/LICENSE)
+[![Build](https://github.com/AbdullahHendy/catch-this-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdullahHendy/catch-this-ai/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/AbdullahHendy/catch-this-ai.svg)](https://github.com/AbdullahHendy/catch-this-ai/blob/main/LICENSE)
 [![Dart SDK](https://img.shields.io/badge/Dart-%3E%3D3.0-0175C2?logo=dart&logoColor=white)](https://dart.dev/)
 [![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.9.2-02569B?logo=flutter&logoColor=white)](https://flutter.dev/)
 </br>
@@ -37,9 +37,9 @@
 ## Features
 * 🎯 **Instant Buzzword Detection**: Launches in listening mode and catches the AI words you're sick of hearing. The buzzword list can't be modified currently but can be found [here](./assets/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.keywords_raw.txt).
 
-* 👻 **Backgorund Tracking**: Runs silently in the background while you are using other apps or when screen is locked to keep you hunting for those AI buzzwords.
+* 👻 **Background Tracking**: Runs silently in the background while you are using other apps or when screen is locked to keep you hunting for those AI buzzwords.
 
-* 📊 **Charts & Stats**: Analyze how much AI non-sense you had to listen to.
+* 📊 **Charts & Stats**: Analyze how much AI nonsense you had to listen to.
 
 * 🔔 **Persistent Notification**: Persistent notification while app is running with the ability to `pause`, `resume`, and `stop` the AI catching.
 
@@ -76,7 +76,7 @@
 * **TODO**
     * Polish UI/UX
     * See TODOs in files
-    * Cannot run in linux because of `recorder`, see `pubspec.yaml`
+    * Cannot run in linux because of `record` and PCM format, see `pubspec.yaml`; maybe consider encoding
     * Think about trimming database box sizes after certain limit to prevent infinite growth (Do we rly need really old data?)
     * Padding values, spacing in charts, etc are hardcoded numbers, shouldn't be like that
 
