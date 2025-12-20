@@ -60,11 +60,9 @@ jobs:
       - name: 🏗 Build APKs
         run: flutter build apk --release --split-per-abi
 
-      # Prepare artifacts for upload/release
-      - name: 📦 Prepare artifacts
-        run: |
-          mkdir -p artifacts
-          cp build/app/outputs/flutter-apk/*.apk artifacts/
+      # Build App Bundle
+      - name: 🏗 Build App Bundle
+        run: flutter build appbundle --release
 
       # ─────────────── ONLY ON TAGS ───────────────
       - name: 🏷️ Create or update Release
@@ -73,5 +71,7 @@ jobs:
         with:
           tag:       ${{ github.ref_name }}
           name:      Release ${{ github.ref_name }}
-          artifacts: artifacts/*.apk
+          artifacts: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/app-release.aab
           token:     ${{ secrets.GITHUB_TOKEN }}
